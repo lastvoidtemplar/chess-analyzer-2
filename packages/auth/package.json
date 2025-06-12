@@ -1,0 +1,22 @@
+{
+  "name": "@repo/auth",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "dev": "tsup src/index.ts --watch --format esm,cjs --dts"
+  },
+  "dependencies": {
+    "@repo/db": "workspace:",
+    "@openauthjs/openauth": "^0.4.3",
+    "zod": "^3.25.61"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "hono": "^4.7.11",
+    "tsup": "^8.5.0",
+    "typescript": "5.8.2"
+  }
+}

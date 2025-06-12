@@ -1,0 +1,9 @@
+{
+  "extends": "../../packages/config/tsconfig/server.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+  },
+  "include": ["src", "schema", "drizzle.config.ts", "tsup.config.ts"]
+}
+
