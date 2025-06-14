@@ -1,11 +1,9 @@
 import { trpc } from "../hooks/trpc"
 
 function Home(){
-    const query = trpc.getGames.useQuery()
-    return <div>
-        {query.data?.map((el)=>{
-            return <div>{el.id}-{el.fen}-{el.analysis}</div>
-        })}
+    const query = trpc.hello.useQuery()
+    return <div className="w-full h-full flex justify-center items-center">
+        <h1 className="text-6xl">{query.data}</h1>
     </div>
 }
 

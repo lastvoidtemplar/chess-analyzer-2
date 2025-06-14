@@ -9,6 +9,7 @@
     "dev": "tsup src/index.ts --watch --format esm,cjs --dts"
   },
   "dependencies": {
+    "@repo/db": "workspace:",
     "@openauthjs/openauth": "^0.4.3",
     "zod": "^3.25.61"
   },

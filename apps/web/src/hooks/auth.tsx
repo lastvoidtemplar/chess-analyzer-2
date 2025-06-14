@@ -11,7 +11,6 @@ const client = createClient({
 const origin = location.origin;
 
 interface AuthContextType {
-  userId?: string;
   loaded: boolean;
   loggedIn: boolean;
   logout: () => void;
@@ -101,7 +100,7 @@ export function AuthProvider({ children }: { children?: React.JSX.Element }) {
     navigate("/");
     setTimeout(() => {
       localStorage.removeItem("refresh");
-      localStorage.removeItem("challenge");
+      sessionStorage.removeItem("challenge");
       token.current = undefined;
       setLoggedIn(false);
     }, 15);

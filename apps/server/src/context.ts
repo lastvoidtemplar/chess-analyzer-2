@@ -1,11 +1,10 @@
-import { createDB } from "@repo/db";
 import type { Context } from "@repo/trpc";
 import { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { auth } from "./auth";
 import { subjects } from "@repo/auth";
-import { DB_PATH } from "./config";
+import { getDB } from "./config";
 
-const db = createDB(DB_PATH)
+const db = getDB()
 
 export async function createContext({
   req,

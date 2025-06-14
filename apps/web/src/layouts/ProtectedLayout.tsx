@@ -6,7 +6,7 @@ function ProtectedLayout() {
 
     if (!loggedIn){
         login()
-        return
+        return <div>Redirecting...</div>
     }
 
     return <Outlet/>

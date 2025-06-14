@@ -10,6 +10,6 @@ export default defineConfig({
   clean: true,
   external: ['better-sqlite3', "@repo/db"],
   onSuccess: async() => {
-    await new Promise(res=>setTimeout(res, 2000))
+    await new Promise(res=>setTimeout(res, 3000))
   },
 });

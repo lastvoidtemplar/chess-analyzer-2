@@ -4,8 +4,10 @@ import { appRouter } from "@repo/trpc";
 import { createContext } from "./context";
 import { getRequestListener, createAdaptorServer } from "@hono/node-server";
 import { createIssuer } from "@repo/auth";
-import { GOOGLE_CLIENT_ID, GOOGLE_SECTET_ID } from "./config";
+import { getDB, GOOGLE_CLIENT_ID, GOOGLE_SECTET_ID } from "./config";
 import cors from "cors"
+
+const db = getDB()
 
 const app = express();
 app.use(cors());
@@ -18,7 +20,7 @@ app.use(
 );
 
 const authHandler = getRequestListener(
-  createIssuer(GOOGLE_CLIENT_ID, GOOGLE_SECTET_ID).fetch
+  createIssuer(GOOGLE_CLIENT_ID, GOOGLE_SECTET_ID, db).fetch
 );
 
 app.use("/", async (req, res) => {

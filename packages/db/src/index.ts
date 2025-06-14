@@ -8,3 +8,4 @@ export function createDB(dbpath:string) {
 }
 export type DB = ReturnType<typeof createDB>;
 export * from "../schema";
+export * from "./queries"
