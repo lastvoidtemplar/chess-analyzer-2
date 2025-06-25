@@ -4,6 +4,7 @@ import { DB, deleteUser, games, getUser, updateUser } from "@repo/db";
 import { Subject } from "@repo/auth";
 import SuperJSON from "superjson";
 import { email } from "zod/v4";
+import { parsePGN } from "./pgn";
 
 export interface Context {
   db: DB;
@@ -89,6 +90,21 @@ export const appRouter = t.router({
     .query(async ({ input, ctx }) => {
       const limit = input?.limit ?? 1;
       return await ctx.db.select().from(games).limit(limit);
+    }),
+
+  postGame: protectedProcedure
+    .input(z.object({ pgn: z.string() }))
+    .mutation(({ input, ctx }) => {
+      const pgn = input.pgn;
+      try {
+        parsePGN(pgn);
+      } catch (error) {
+        console.log(error);
+        
+        if (error instanceof Error) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
+        }
+      }
     }),
 });
 

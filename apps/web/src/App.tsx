@@ -6,6 +6,7 @@ import Home from "./components/Home";
 import ProtectedLayout from "./layouts/ProtectedLayout";
 import Profile from "./components/Profile";
 import NotFound from "./components/NotFound";
+import Games from "./components/Games";
 
 function App() {
   return (
@@ -16,9 +17,10 @@ function App() {
             <Route element={<Layout />}>
               <Route index element={<Home />} />
               <Route element={<ProtectedLayout />}>
+                <Route path="/games" element={<Games />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
-              <Route path="*" element={<NotFound/>}/>
+              <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
         </TRPCProvider>

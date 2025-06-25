@@ -27,12 +27,12 @@ function UserBar() {
   return (
     <div className="flex w-full p-4 items-center gap-2">
       <img
-        src={query.data?.picture}
+        src={"dsff"}
         alt="Profile Picture"
         className="w-16 rounded-full"
       />
-      <div className="flex flex-col items-center">
-        <div className="pl-2">
+      <div className="flex flex-col items-center gap-0.5">
+        <div>
           <p className="text-lg">{query.data?.username}</p>
         </div>
         <Button onClick={logout}>

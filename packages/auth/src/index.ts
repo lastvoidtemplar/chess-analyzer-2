@@ -66,10 +66,7 @@ export const createIssuer = (
           userId: payload.sub,
           username: payload.name,
           email: payload.email,
-          emailVerified: payload.email_verified,
           name: payload.name,
-          firstName: payload.given_name,
-          lastName: payload.family_name,
           picture: payload.picture,
         });
       }

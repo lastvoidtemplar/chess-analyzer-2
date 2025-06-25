@@ -5,7 +5,7 @@ import Input from "./Input";
 import Button from "./Button";
 import { useAuth } from "../hooks/auth";
 
-type User = {
+type UserForm = {
   userId: string;
   username: string;
   name: string;
@@ -37,7 +37,7 @@ function Profile() {
       e.preventDefault();
 
       if (ref.current) {
-        updateProfile.mutate(ref.current.getValue() as User);
+        updateProfile.mutate(ref.current.getValue() as UserForm);
       }
     },
     [updateProfile]
