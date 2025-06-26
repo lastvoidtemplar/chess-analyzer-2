@@ -1,0 +1,19 @@
+{
+  "name": "@repo/worker",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsup src/index.ts --watch --format esm,cjs --onSuccess \"node dist/index.js\"",
+    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "start": "node dist/index.js"
+  },
+  "packageManager": "pnpm@10.12.1",
+  "devDependencies": {
+    "@types/node": "^24.0.4",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "iovalkey": "^0.3.3"
+  }
+}

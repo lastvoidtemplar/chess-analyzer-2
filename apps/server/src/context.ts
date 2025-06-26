@@ -2,9 +2,9 @@ import type { Context } from "@repo/trpc";
 import { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import { auth } from "./auth";
 import { subjects } from "@repo/auth";
-import { getDB } from "./config";
+import { getDB, valkey } from "./config";
 
-const db = getDB()
+const db = getDB();
 
 export async function createContext({
   req,
@@ -12,22 +12,22 @@ export async function createContext({
   const header = req.headers.authorization;
 
   if (!header) {
-    return { db };
+    return { db ,valkey};
   }
 
   const spiltHeader = header?.split(" ");
   if (spiltHeader.length !== 2 || spiltHeader[0] !== "Bearer") {
-    return { db };
+    return { db ,valkey};
   }
   const token = spiltHeader[1];
-  
+
   const verifyResult = await auth.verify(subjects, token);
 
   if (verifyResult.err) {
-    return { db };
+    return { db,valkey };
   }
 
-  const subject = verifyResult.subject
+  const subject = verifyResult.subject;
 
-  return { db , subject};
+  return { db,valkey ,subject };
 }

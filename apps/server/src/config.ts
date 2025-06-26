@@ -1,4 +1,5 @@
 import { createDB, DB } from "@repo/db";
+import Valkey from "iovalkey";
 import dotenv from "dotenv";
 
 dotenv.config()
@@ -12,3 +13,13 @@ const db = createDB(DB_PATH)
 export function getDB(): DB{
     return db
 }
+
+export const valkey = new Valkey({
+  host: "127.0.0.1",
+  port: 6379,
+});
+
+export const valkeyBloacking = new Valkey({
+  host: "127.0.0.1",
+  port: 6379,
+});

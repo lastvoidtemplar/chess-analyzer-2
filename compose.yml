@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  valkey:
+    image: valkey/valkey:latest
+    container_name: valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    command: ["valkey-server", "--save", ""]
+
+  valkey-web:
+    image: rediscommander/redis-commander:latest
+    container_name: valkey-web
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:valkey:6379
+    depends_on:
+      - valkey
+
+volumes:
+  valkey_data:

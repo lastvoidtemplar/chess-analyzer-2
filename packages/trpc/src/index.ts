@@ -1,13 +1,22 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { DB, deleteUser, games, getUser, updateUser } from "@repo/db";
+import {
+  createGame,
+  DB,
+  deleteUser,
+  games,
+  getUser,
+  updateUser,
+} from "@repo/db";
 import { Subject } from "@repo/auth";
 import SuperJSON from "superjson";
-import { email } from "zod/v4";
 import { parsePGN } from "./pgn";
+import Valkey from "iovalkey";
+import { publishFensTask } from "./valkey";
 
 export interface Context {
   db: DB;
+  valkey: Valkey;
   subject?: Subject;
 }
 
@@ -94,13 +103,24 @@ export const appRouter = t.router({
 
   postGame: protectedProcedure
     .input(z.object({ pgn: z.string() }))
-    .mutation(({ input, ctx }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
       const pgn = input.pgn;
       try {
-        parsePGN(pgn);
+        const parsed = parsePGN(pgn);
+        const gameId = createGame(
+          ctx.db,
+          ctx.subject.properties.userId,
+          parsed.result,
+          parsed.headers,
+          parsed.moves
+        );
+        await publishFensTask(ctx.valkey, gameId,parsed.moves);
       } catch (error) {
-        console.log(error);
-        
+        console.error(error);
+
         if (error instanceof Error) {
           throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
         }

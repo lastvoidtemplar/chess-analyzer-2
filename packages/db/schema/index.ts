@@ -1,3 +1,4 @@
+import { table } from "console";
 import {
   sqliteTable,
   text,
@@ -6,7 +7,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 export const users = sqliteTable("users", {
-  userId: text("id").primaryKey(),
+  userId: text("user_id").primaryKey(),
   username: text("username").notNull(),
   name: text("name").notNull(),
   email: text("email").notNull(),
@@ -14,29 +15,45 @@ export const users = sqliteTable("users", {
 });
 
 export const games = sqliteTable("games", {
-  gameId: text("id").primaryKey(),
+  gameId: text("game_id").primaryKey(),
   userId: text("user_id")
     .notNull()
     .references(() => users.userId),
-  event: text("event"),
-  site: text("site"),
-  date: text("date"),
-  white: text("white"),
-  black: text("black"),
-  result: text("result"),
-  timeControl: text("time_control"),
-  whiteElo: text("white_elo"),
-  blackElo: text("black_elo"),
-  eco: text("eco"),
+  result: text("result").notNull(),
 });
 
-export const moves = sqliteTable(
-  "moves",
+export const gameHeaders = sqliteTable(
+  "game_headers",
   {
-    moveId: integer("move_id").notNull(),
-    gameId: text("game_id").references(() => games.gameId),
-    notation: text("notation").notNull(),
-    whiteMove: integer({mode:"boolean"})
+    gameId: text("game_id")
+      .notNull()
+      .references(() => games.gameId),
+    header: text("header").notNull(),
+    value: text("value").notNull(),
   },
-  (table) => [primaryKey({ columns: [table.gameId, table.moveId] })]
+  (table) => [primaryKey({ columns: [table.gameId, table.header] })]
+);
+
+export const gameMoves = sqliteTable(
+  "game_moves",
+  {
+    gameId: text("game_id")
+      .notNull()
+      .references(() => games.gameId),
+    turn: integer("turn").notNull(),
+    move: text("move").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.gameId, table.turn] })]
+);
+
+export const gamePositions = sqliteTable(
+  "game_positions",
+  {
+    gameId: text("game_id")
+      .notNull()
+      .references(() => games.gameId),
+    turn: integer("turn").notNull(),
+    fen: text("fen").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.gameId, table.turn] })]
 );

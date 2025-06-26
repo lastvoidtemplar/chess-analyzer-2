@@ -1,4 +1,6 @@
-type PGNHeaders = Map<string, string>;
+import { Chess } from "chess.js";
+
+type PGNHeaders = Record<string, string>;
 
 type ParsedPGN = {
   headers: PGNHeaders;
@@ -6,14 +8,24 @@ type ParsedPGN = {
   result: string;
 };
 
-export function parsePGN(pgn: string) {
-  const [headers, remainingPGN] = parsePGNHeaders(pgn);
-  const [moves, result] = parsePGNBody(remainingPGN);
-  console.log(headers, moves, result);
+export function parsePGN(pgn: string): ParsedPGN {
+  const chess = new Chess();
+  chess.loadPgn(pgn)
+
+  const headers = chess.getHeaders()
+  const sanMoves= chess.history()
+  const lanMoves = convertToLAN(sanMoves)
+  const result = headers.Result
+  return {
+    headers: headers,
+    moves: lanMoves,
+    result: result
+  }
 }
 
-function parsePGNHeaders(pgn: string): [PGNHeaders, string] {
-  const headers: PGNHeaders = new Map();
+// before I find chess.js
+function parsePGNHeaders(pgn: string): [Map<string, string>, string] {
+  const headers = new Map();
 
   while (true) {
     pgn = pgn.trimStart();
@@ -71,6 +83,7 @@ function parsePGNHeaders(pgn: string): [PGNHeaders, string] {
   return [headers, pgn];
 }
 
+// before I find chess.js
 function parsePGNBody(pgn: string): [string[], string] {
   const moves: string[] = [];
   while (true) {
@@ -87,7 +100,7 @@ function parsePGNBody(pgn: string): [string[], string] {
     }
 
     if (pgn[ind] === "-") {
-      ind++
+      ind++;
       while (ind < pgn.length && isNumberSymbol(pgn[ind])) {
         ind++;
       }
@@ -140,4 +153,23 @@ function isWordCharacter(ch: string) {
     ("0" <= ch && ch <= "9") ||
     ch === "_"
   );
+}
+
+// Long Algebraic Notation
+function convertToLAN(sanMoves: string[]) {
+  const chess = new Chess();
+  const lanMoves: string[] = [];
+
+  for (const sanMove of sanMoves) {
+    const move = chess.move(sanMove);
+    
+    if (!move) {
+      throw new Error(`Invalid move in sequence: ${sanMove}`);
+    }
+
+    const lan = move.from + move.to + (move.promotion || '');
+    lanMoves.push(lan);
+  }
+  
+  return lanMoves;
 }
