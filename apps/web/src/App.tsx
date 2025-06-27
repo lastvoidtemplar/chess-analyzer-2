@@ -7,6 +7,7 @@ import ProtectedLayout from "./layouts/ProtectedLayout";
 import Profile from "./components/Profile";
 import NotFound from "./components/NotFound";
 import Games from "./components/Games";
+import Analyze from "./components/Analyze";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
               <Route element={<ProtectedLayout />}>
                 <Route path="/games" element={<Games />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/analyze/:gameId" element={<Analyze/>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Route>

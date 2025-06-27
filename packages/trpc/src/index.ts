@@ -12,6 +12,7 @@ import {
   GameWithHeaders as GameWithHeadersType,
   updateGame,
   updateGameHeaders,
+  getPositions,
 } from "@repo/db";
 import { Subject } from "@repo/auth";
 import SuperJSON from "superjson";
@@ -171,7 +172,7 @@ export const appRouter = t.router({
       }
     }),
   updateGameHeaders: protectedProcedure
-    .input(z.object({ gameId: z.string()}).catchall(z.string()))
+    .input(z.object({ gameId: z.string() }).catchall(z.string()))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.subject) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -185,15 +186,15 @@ export const appRouter = t.router({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
       try {
-        const {gameId, ...headers} = input
-        const arr = Object.entries(headers).map(([header, value])=>{
+        const { gameId, ...headers } = input;
+        const arr = Object.entries(headers).map(([header, value]) => {
           return {
             gameId: gameId,
             header: header,
-            value: value
-          }
-        })
-        await updateGameHeaders(ctx.db, gameId, arr)
+            value: value,
+          };
+        });
+        await updateGameHeaders(ctx.db, gameId, arr);
       } catch (err) {
         if (err instanceof Error) {
           throw new TRPCError({ code: "BAD_REQUEST", message: err.message });
@@ -216,6 +217,28 @@ export const appRouter = t.router({
       }
 
       await deleteGame(ctx.db, input.gameId);
+    }),
+
+  getPositions: protectedProcedure
+    .input(z.object({ gameId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+      const game = await getGame(ctx.db, input.gameId);
+      if (!game) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      if (game.userId !== ctx.subject.properties.userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const positions = await getPositions(ctx.db, game.gameId)
+      return{
+        gameId:game.gameId,
+        name: game.name,
+        positions: positions
+      }
     }),
 });
 

@@ -203,3 +203,18 @@ export async function updateGameHeaders(
 export async function deleteGame(db: DB, gameId: string) {
   await db.delete(games).where(eq(games.gameId, gameId));
 }
+
+export async function getPositions(db: DB, gameId: string) {
+  const result = await db.select().from(gamePositions).where(eq(gamePositions.gameId, gameId))
+
+  const arr: Omit<InferSelectModel<typeof gamePositions>, 'gameId' | 'turn'>[]= new Array(result.length)
+  result.forEach(el=>{
+    arr[el.turn] = {
+      san: el.san,
+      lan: el.lan,
+      fen: el.fen
+    }
+  })
+
+  return arr
+}

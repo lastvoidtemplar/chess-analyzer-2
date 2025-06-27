@@ -17,13 +17,13 @@ function Sidebar() {
         )}
       >
         {open && (
-          <>
+          <React.Fragment>
             <Logo />
             <Navbar />
             <hr className="w-5/6 my-2" />
             <AnalyzerTabs />
             <UserBar />
-          </>
+          </React.Fragment>
         )}
       </div>
       <button
