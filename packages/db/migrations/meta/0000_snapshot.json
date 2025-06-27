@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c77f6ad4-50f0-4629-a0d5-572ce8e8f41c",
+  "id": "223b2ae7-839d-496d-a80a-4e759992e191",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "game_headers": {
@@ -41,7 +41,7 @@
           "columnsTo": [
             "game_id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -52,59 +52,6 @@
             "header"
           ],
           "name": "game_headers_game_id_header_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "game_moves": {
-      "name": "game_moves",
-      "columns": {
-        "game_id": {
-          "name": "game_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "turn": {
-          "name": "turn",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "move": {
-          "name": "move",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "game_moves_game_id_games_game_id_fk": {
-          "name": "game_moves_game_id_games_game_id_fk",
-          "tableFrom": "game_moves",
-          "tableTo": "games",
-          "columnsFrom": [
-            "game_id"
-          ],
-          "columnsTo": [
-            "game_id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "game_moves_game_id_turn_pk": {
-          "columns": [
-            "game_id",
-            "turn"
-          ],
-          "name": "game_moves_game_id_turn_pk"
         }
       },
       "uniqueConstraints": {},
@@ -127,11 +74,25 @@
           "notNull": true,
           "autoincrement": false
         },
+        "san": {
+          "name": "san",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lan": {
+          "name": "lan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "fen": {
           "name": "fen",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         }
       },
@@ -147,7 +108,7 @@
           "columnsTo": [
             "game_id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -215,7 +176,7 @@
           "columnsTo": [
             "user_id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

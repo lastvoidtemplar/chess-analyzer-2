@@ -39,20 +39,6 @@ export const gameHeaders = sqliteTable(
   (table) => [primaryKey({ columns: [table.gameId, table.header] })]
 );
 
-export const gameMoves = sqliteTable(
-  "game_moves",
-  {
-    gameId: text("game_id")
-      .notNull()
-      .references(() => games.gameId, {
-        onDelete: "cascade",
-      }),
-    turn: integer("turn").notNull(),
-    move: text("move").notNull(),
-  },
-  (table) => [primaryKey({ columns: [table.gameId, table.turn] })]
-);
-
 export const gamePositions = sqliteTable(
   "game_positions",
   {
@@ -62,7 +48,9 @@ export const gamePositions = sqliteTable(
         onDelete: "cascade",
       }),
     turn: integer("turn").notNull(),
-    fen: text("fen").notNull(),
+    san: text("san"),
+    lan: text("lan"),
+    fen: text("fen"),
   },
   (table) => [primaryKey({ columns: [table.gameId, table.turn] })]
 );

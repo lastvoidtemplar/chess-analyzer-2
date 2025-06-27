@@ -4,23 +4,25 @@ type PGNHeaders = Record<string, string>;
 
 type ParsedPGN = {
   headers: PGNHeaders;
-  moves: string[];
+  sans: string[];
+  lans: string[];
   result: string;
 };
 
 export function parsePGN(pgn: string): ParsedPGN {
   const chess = new Chess();
-  chess.loadPgn(pgn)
+  chess.loadPgn(pgn);
 
-  const headers = chess.getHeaders()
-  const sanMoves= chess.history()
-  const lanMoves = convertToLAN(sanMoves)
-  const result = headers.Result
+  const headers = chess.getHeaders();
+  const sanMoves = chess.history();
+  const lanMoves = convertToLAN(sanMoves);
+  const result = headers.Result;
   return {
     headers: headers,
-    moves: lanMoves,
-    result: result
-  }
+    sans: sanMoves,
+    lans: lanMoves,
+    result: result,
+  };
 }
 
 // before I find chess.js
@@ -162,14 +164,14 @@ function convertToLAN(sanMoves: string[]) {
 
   for (const sanMove of sanMoves) {
     const move = chess.move(sanMove);
-    
+
     if (!move) {
       throw new Error(`Invalid move in sequence: ${sanMove}`);
     }
 
-    const lan = move.from + move.to + (move.promotion || '');
+    const lan = move.from + move.to + (move.promotion || "");
     lanMoves.push(lan);
   }
-  
+
   return lanMoves;
 }

@@ -3,23 +3,17 @@ CREATE TABLE `game_headers` (
 	`header` text NOT NULL,
 	`value` text NOT NULL,
 	PRIMARY KEY(`game_id`, `header`),
-	FOREIGN KEY (`game_id`) REFERENCES `games`(`game_id`) ON UPDATE no action ON DELETE no action
-);
---> statement-breakpoint
-CREATE TABLE `game_moves` (
-	`game_id` text NOT NULL,
-	`turn` integer NOT NULL,
-	`move` text NOT NULL,
-	PRIMARY KEY(`game_id`, `turn`),
-	FOREIGN KEY (`game_id`) REFERENCES `games`(`game_id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`game_id`) REFERENCES `games`(`game_id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `game_positions` (
 	`game_id` text NOT NULL,
 	`turn` integer NOT NULL,
-	`fen` text NOT NULL,
+	`san` text,
+	`lan` text,
+	`fen` text,
 	PRIMARY KEY(`game_id`, `turn`),
-	FOREIGN KEY (`game_id`) REFERENCES `games`(`game_id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`game_id`) REFERENCES `games`(`game_id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `games` (
@@ -27,7 +21,7 @@ CREATE TABLE `games` (
 	`user_id` text NOT NULL,
 	`name` text NOT NULL,
 	`result` text NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `games_name_unique` ON `games` (`name`);--> statement-breakpoint

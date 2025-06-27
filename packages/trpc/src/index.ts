@@ -130,9 +130,10 @@ export const appRouter = t.router({
           input.name,
           parsed.result,
           parsed.headers,
-          parsed.moves
+          parsed.sans,
+          parsed.lans
         );
-        await publishFensTask(ctx.valkey, gameId, parsed.moves);
+        await publishFensTask(ctx.valkey, gameId, parsed.lans);
       } catch (error) {
         console.error(error);
 

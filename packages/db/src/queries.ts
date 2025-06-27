@@ -1,5 +1,5 @@
 import { and, eq, InferInsertModel, InferSelectModel } from "drizzle-orm";
-import { DB, gameHeaders, gameMoves, gamePositions, games, users } from ".";
+import { DB, gameHeaders, gamePositions, games, users } from ".";
 import { v4 as uuid } from "uuid";
 
 export async function checkIfUserExistById(db: DB, userId: string) {
@@ -46,9 +46,15 @@ export function createGame(
   name: string,
   result: string,
   headers: Record<string, string>,
-  moves: string[]
+  sans: string[],
+  lans: string[]
 ) {
   const gameId = uuid();
+
+  if (sans.length !== lans.length) {
+    throw new Error("Not matching length for sans and lans");
+  }
+
   db.transaction((tx) => {
     try {
       tx.insert(games)
@@ -70,17 +76,17 @@ export function createGame(
       }
       tx.insert(gameHeaders).values(headersBatch).run();
 
-      let turn = 1;
-      const movesBatch: InferInsertModel<typeof gameMoves>[] = [];
-      for (const move of moves) {
+      const movesBatch: InferInsertModel<typeof gamePositions>[] = [];
+      for (let ind = 0; ind < sans.length; ind++) {
         movesBatch.push({
           gameId: gameId,
-          turn: turn,
-          move: move,
+          turn: ind+1,
+          san: sans[ind],
+          lan: lans[ind],
         });
-        turn++;
       }
-      tx.insert(gameMoves).values(movesBatch).run();
+
+      tx.insert(gamePositions).values(movesBatch).run();
     } catch (err) {
       console.error(err);
       throw err;
@@ -89,18 +95,26 @@ export function createGame(
   return gameId;
 }
 
-export async function createPositions(db: DB, gameId: string, fens: string[]) {
-  let turn = 1;
-  const positionsBatch: InferInsertModel<typeof gamePositions>[] = [];
-  for (const fen of fens) {
-    positionsBatch.push({
-      gameId: gameId,
-      turn: turn,
-      fen: fen,
-    });
-    turn++;
-  }
-  await db.insert(gamePositions).values(positionsBatch);
+export function createPositions(db: DB, gameId: string, fens: string[]) {
+  db.transaction((tx) => {
+    tx.insert(gamePositions)
+      .values({
+        gameId: gameId,
+        turn: 0,
+        fen: fens[0],
+      })
+      .run();
+    let turn = 1;
+    for (const fen of fens) {
+      db.update(gamePositions)
+        .set({ fen })
+        .where(
+          and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn))
+        )
+        .run();
+      turn++;
+    }
+  });
 }
 
 export type GameWithHeaders = InferSelectModel<typeof games> & {
@@ -180,7 +194,9 @@ export async function updateGameHeaders(
     await db
       .update(gameHeaders)
       .set(el)
-      .where(and(eq(gameHeaders.gameId, gameId), eq(gameHeaders.header, el.header)));
+      .where(
+        and(eq(gameHeaders.gameId, gameId), eq(gameHeaders.header, el.header))
+      );
   }
 }
 

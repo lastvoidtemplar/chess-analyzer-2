@@ -6,6 +6,8 @@ import { trpc } from "../hooks/trpc";
 import Input, { type InputHandle } from "./Input";
 import { Eye, PencilLine, Trash2 } from "lucide-react";
 import type { GameWithHeaders } from "@repo/trpc";
+import { useGameStore } from "../hooks/store";
+import { Link } from "react-router-dom";
 
 function Games() {
   const { isLoading, data, error } = trpc.getGames.useQuery();
@@ -77,8 +79,9 @@ type GameProps = {
 };
 
 function Game({ game, edit }: GameProps) {
-  const utils = trpc.useUtils();
+  const { addGame } = useGameStore();
 
+  const utils = trpc.useUtils();
   const deleteGame = trpc.deleteGame.useMutation({
     onSuccess() {
       utils.getGames.invalidate();
@@ -99,9 +102,11 @@ function Game({ game, edit }: GameProps) {
         </div>
       </div>
       <div className="flex gap-1 justify-around">
-        <Button>
-          <Eye width={40} height={40} />
-        </Button>
+        <Link to={`/analyze/${game.gameId}`}>
+          <Button onClick={() => addGame(game.gameId, game.name)}>
+            <Eye width={40} height={40} />
+          </Button>
+        </Link>
         <Button onClick={() => edit(game)}>
           <PencilLine width={40} height={40} />
         </Button>
@@ -183,9 +188,11 @@ const UpdateGameForm = React.forwardRef<
   UpdateGameFormHandle,
   UpdateGameFormProps
 >(({ callback }, ref) => {
+  const { updateName } = useGameStore();
   const utils = trpc.useUtils();
   const updateGame = trpc.updateGame.useMutation({
     onSuccess() {
+      updateName(gameId, nameRef.current!.getValue());
       if (error1Ref.current) {
         error1Ref.current.innerText = "";
       }
@@ -207,7 +214,7 @@ const UpdateGameForm = React.forwardRef<
     },
   });
 
-  const updateGameHeaders= trpc.updateGameHeaders.useMutation({
+  const updateGameHeaders = trpc.updateGameHeaders.useMutation({
     onSuccess() {
       if (error2Ref.current) {
         error2Ref.current.innerText = "";
