@@ -18,7 +18,10 @@ export const games = sqliteTable("games", {
   gameId: text("game_id").primaryKey(),
   userId: text("user_id")
     .notNull()
-    .references(() => users.userId),
+    .references(() => users.userId, {
+      onDelete: "cascade",
+    }),
+  name: text("name").notNull().unique(),
   result: text("result").notNull(),
 });
 
@@ -27,7 +30,9 @@ export const gameHeaders = sqliteTable(
   {
     gameId: text("game_id")
       .notNull()
-      .references(() => games.gameId),
+      .references(() => games.gameId, {
+        onDelete: "cascade",
+      }),
     header: text("header").notNull(),
     value: text("value").notNull(),
   },
@@ -39,7 +44,9 @@ export const gameMoves = sqliteTable(
   {
     gameId: text("game_id")
       .notNull()
-      .references(() => games.gameId),
+      .references(() => games.gameId, {
+        onDelete: "cascade",
+      }),
     turn: integer("turn").notNull(),
     move: text("move").notNull(),
   },
@@ -51,7 +58,9 @@ export const gamePositions = sqliteTable(
   {
     gameId: text("game_id")
       .notNull()
-      .references(() => games.gameId),
+      .references(() => games.gameId, {
+        onDelete: "cascade",
+      }),
     turn: integer("turn").notNull(),
     fen: text("fen").notNull(),
   },

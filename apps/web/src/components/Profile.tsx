@@ -57,7 +57,7 @@ function Profile() {
 
   return (
     <div className="w-full h-full pr-8 py-2 flex flex-col items-center gap-2">
-      <h1 className="text-4xl">Profile</h1>
+      <h1 className="text-6xl">Profile</h1>
       <hr className="w-full" />
       <div className="grow w-full flex flex-col justify-center items-center gap-4 ">
         <Form

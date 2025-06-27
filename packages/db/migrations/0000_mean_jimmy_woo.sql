@@ -25,10 +25,12 @@ CREATE TABLE `game_positions` (
 CREATE TABLE `games` (
 	`game_id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
+	`name` text NOT NULL,
 	`result` text NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `games_name_unique` ON `games` (`name`);--> statement-breakpoint
 CREATE TABLE `users` (
 	`user_id` text PRIMARY KEY NOT NULL,
 	`username` text NOT NULL,

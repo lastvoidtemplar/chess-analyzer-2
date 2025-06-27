@@ -3,10 +3,15 @@ import { z } from "zod";
 import {
   createGame,
   DB,
+  deleteGame,
   deleteUser,
-  games,
+  getGame,
+  getGamesWithHeaders,
   getUser,
   updateUser,
+  GameWithHeaders as GameWithHeadersType,
+  updateGame,
+  updateGameHeaders,
 } from "@repo/db";
 import { Subject } from "@repo/auth";
 import SuperJSON from "superjson";
@@ -92,17 +97,26 @@ export const appRouter = t.router({
     await deleteUser(ctx.db, ctx.subject.properties.userId);
   }),
 
-  getGames: publicProcedure
+  getGames: protectedProcedure
     .input(
       z.object({ limit: z.number().min(1).max(100).optional() }).optional()
     )
     .query(async ({ input, ctx }) => {
-      const limit = input?.limit ?? 1;
-      return await ctx.db.select().from(games).limit(limit);
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const limit = input?.limit ?? 50;
+      const games = await getGamesWithHeaders(
+        ctx.db,
+        ctx.subject.properties.userId,
+        limit
+      );
+      return games;
     }),
 
   postGame: protectedProcedure
-    .input(z.object({ pgn: z.string() }))
+    .input(z.object({ name: z.string().min(3), pgn: z.string() }))
     .mutation(async ({ input, ctx }) => {
       if (!ctx.subject) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -113,11 +127,12 @@ export const appRouter = t.router({
         const gameId = createGame(
           ctx.db,
           ctx.subject.properties.userId,
+          input.name,
           parsed.result,
           parsed.headers,
           parsed.moves
         );
-        await publishFensTask(ctx.valkey, gameId,parsed.moves);
+        await publishFensTask(ctx.valkey, gameId, parsed.moves);
       } catch (error) {
         console.error(error);
 
@@ -126,6 +141,82 @@ export const appRouter = t.router({
         }
       }
     }),
+
+  updateGame: protectedProcedure
+    .input(z.object({ gameId: z.string(), name: z.string().min(3) }))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const game = await getGame(ctx.db, input.gameId);
+      if (!game) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      if (game.userId !== ctx.subject.properties.userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+      try {
+        await updateGame(ctx.db, {
+          gameId: input.gameId,
+          userId: game.userId,
+          name: input.name,
+          result: game.result,
+        });
+      } catch (err) {
+        if (err instanceof Error) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: err.message });
+        }
+      }
+    }),
+  updateGameHeaders: protectedProcedure
+    .input(z.object({ gameId: z.string()}).catchall(z.string()))
+    .mutation(async ({ input, ctx }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const game = await getGame(ctx.db, input.gameId);
+      if (!game) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      if (game.userId !== ctx.subject.properties.userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+      try {
+        const {gameId, ...headers} = input
+        const arr = Object.entries(headers).map(([header, value])=>{
+          return {
+            gameId: gameId,
+            header: header,
+            value: value
+          }
+        })
+        await updateGameHeaders(ctx.db, gameId, arr)
+      } catch (err) {
+        if (err instanceof Error) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: err.message });
+        }
+      }
+    }),
+
+  deleteGame: protectedProcedure
+    .input(z.object({ gameId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+      const game = await getGame(ctx.db, input.gameId);
+      if (!game) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      if (game.userId !== ctx.subject.properties.userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      await deleteGame(ctx.db, input.gameId);
+    }),
 });
 
+export type GameWithHeaders = GameWithHeadersType;
 export type AppRouter = typeof appRouter;

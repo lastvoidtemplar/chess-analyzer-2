@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c77f6ad4-50f0-4629-a0d5-572ce8e8f41c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "9fd702cd-012c-427c-a513-a18698c083e0",
+  "prevId": "c77f6ad4-50f0-4629-a0d5-572ce8e8f41c",
   "tables": {
     "game_headers": {
       "name": "game_headers",
@@ -41,7 +41,7 @@
           "columnsTo": [
             "game_id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -94,7 +94,7 @@
           "columnsTo": [
             "game_id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -147,7 +147,7 @@
           "columnsTo": [
             "game_id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -215,7 +215,7 @@
           "columnsTo": [
             "user_id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

@@ -3,6 +3,7 @@ import React from "react";
 type TextAreaProps = {
   fieldName?: string;
   labelText?: string;
+  rows?: number;
   value?: string;
   disabled?: boolean;
   hidden?: boolean;
@@ -14,7 +15,7 @@ export interface TextAreaHandle {
 }
 
 const TextArea = React.forwardRef<TextAreaHandle, TextAreaProps>(
-  ({ fieldName, labelText, value, disabled, hidden }, ref) => {
+  ({ fieldName, labelText, rows, value, disabled, hidden }, ref) => {
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
     React.useImperativeHandle(ref, () => ({
@@ -39,6 +40,7 @@ const TextArea = React.forwardRef<TextAreaHandle, TextAreaProps>(
           className="border-2 border-black px-2 py-1 rounded-sm"
           name={fieldName}
           ref={textareaRef}
+          rows={rows}
           disabled={disabled}
           hidden={hidden}
         />
