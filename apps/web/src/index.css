@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@layer utilities {
+  .no-focus-outline svg:focus {
+    outline: none;
+  }
+}
+
 html, body {
   width: 100%;
   height: 100%;

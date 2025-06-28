@@ -189,19 +189,8 @@ type EvaluationBarProps = {
 function EvaluationBar({ gameId }: EvaluationBarProps) {
   const scoreUnit = useGameStore((state) => state.getCurrScoreUnit(gameId));
   const scoreValue = useGameStore((state) => state.getCurrScoreValue(gameId));
+  const percent = useGameStore((state) => state.getCurrScorePercent(gameId));
 
-  const percent = React.useMemo(() => {
-    if (!scoreUnit || !scoreValue) {
-      return 50;
-    }
-
-    if (scoreUnit === "mate") {
-      return scoreValue > 0 ? 100 : 0;
-    }
-
-    const capped = Math.max(-1000, Math.min(1000, scoreValue));
-    return 50 - capped / 20;
-  }, [scoreUnit, scoreValue]);
 
   return (
     <div className="w-14 border-2 flex flex-col">

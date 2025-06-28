@@ -1,5 +1,4 @@
 import React from "react";
-import Graph from "../assets/graph.png";
 import { useGameStore, type Position } from "../hooks/store";
 import {
   ArrowLeft,
@@ -12,6 +11,8 @@ import Form from "./Form";
 import Button from "./Button";
 import TextArea, { type TextAreaHandle } from "./TextArea";
 import { trpc } from "../hooks/trpc";
+import { ResponsiveContainer, AreaChart, Area } from "recharts";
+import type { CategoricalChartFunc } from "recharts/types/chart/types";
 
 type AnalyzePanelProps = {
   gameId: string;
@@ -165,7 +166,8 @@ function ReviewControlPanel({ gameId }: ReviewControlPanelType) {
 
   return (
     <div className="mx-4 mb-2 flex flex-col items-center">
-      <img src={Graph} className="h-28 mb-2" />
+      {/* <img src={Graph} className="h-28 mb-2" /> */}
+      <ScoresChart gameId={gameId} />
       <div className="flex justify-evenly w-full my-2">
         <button className="border-2 px-4" onClick={() => firstTurn(gameId)}>
           <ArrowLeftToLine color="black" size={ButtonSize} />
@@ -180,6 +182,61 @@ function ReviewControlPanel({ gameId }: ReviewControlPanelType) {
           <ArrowRightToLine color="black" size={ButtonSize} />
         </button>
       </div>
+    </div>
+  );
+}
+
+type ScoreChartType = {
+  gameId: string;
+};
+
+function ScoresChart({ gameId }: ScoreChartType) {
+  const { getPositionsScores, setTurn } = useGameStore();
+  const [data, setData] = React.useState<ReturnType<typeof getPositionsScores>>(
+    []
+  );
+
+  React.useEffect(() => {
+    setData(getPositionsScores(gameId));
+  }, [gameId, getPositionsScores]);
+
+  const onClick = React.useCallback<CategoricalChartFunc>(
+    (e) => {
+      // type bug in the library
+      const turn: number = e.activeLabel as unknown as number;
+      setTurn(gameId, turn);
+    },
+    [gameId, setTurn]
+  );
+
+  return (
+    <div className="w-full h-28 border-2 no-focus-outline">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart
+          data={data}
+          margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+          onClick={onClick}
+        >
+          <Area
+            type="monotone"
+            dataKey={() => 100}
+            stroke="none"
+            fill="#222222"
+            fillOpacity={0.95}
+            isAnimationActive={false}
+          />
+
+          <Area
+            type="monotone"
+            dataKey="percent"
+            stroke="#000000"
+            fill="#eeeeee"
+            fillOpacity={0.95}
+            strokeWidth={2}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }

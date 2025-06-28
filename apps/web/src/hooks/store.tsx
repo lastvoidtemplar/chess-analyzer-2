@@ -6,6 +6,7 @@ export type Position = {
   fen: string | null;
   scoreUnit: "cp" | "mate" | null;
   scoreValue: number | null;
+  scorePercent?: number;
 };
 
 type GameState =
@@ -61,10 +62,12 @@ type GameStore = {
   getCurrPosition: (gameId: string) => string;
   getCurrScoreUnit: (gameId: string) => "cp" | "mate" | null;
   getCurrScoreValue: (gameId: string) => number | null;
+  getCurrScorePercent: (gameId: string) => number;
   getWhite: (gameId: string) => string;
   getBlack: (gameId: string) => string;
   getWhiteElo: (gameId: string) => number;
-  getBlackElo: (gameId: string) => number;
+  getBlackElo: (gameId: string) => number; 
+  getPositionsScores: (gameId:string)=>{turn:number, percent: number}[]
 };
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -108,6 +111,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
     blackElo: number,
     positions: Position[]
   ) => {
+    for (const position of positions) {
+      if (!position.scoreUnit || !position.scoreValue) {
+        position.scorePercent = 50;
+        continue
+      }
+
+      if (position.scoreUnit === "mate") {
+        position.scorePercent = position.scoreValue > 0 ? 100 : 0;
+        continue
+      }
+
+      const capped = Math.max(-1000, Math.min(1000, position.scoreValue));
+      position.scorePercent =  parseFloat((50 - capped / 20).toFixed(2));
+    }
+
     set((prev) => {
       const ind = prev.games.findIndex((curr) => curr.gameId === gameId);
       if (ind === -1) {
@@ -272,32 +290,53 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
     return game.positions[game.currTurn].scoreValue;
   }, 
+   getCurrScorePercent: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game || game.status === "loading") {
+      return 50;
+    }
+    return game.positions[game.currTurn].scorePercent ?? 50;
+  },
   getWhite: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game) {
       return "";
     }
     return game.white;
-  }, 
-   getBlack: (gameId: string) => {
+  },
+  getBlack: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game) {
       return "";
     }
     return game.black;
-  }, 
-   getWhiteElo: (gameId: string) => {
+  },
+  getWhiteElo: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game) {
       return 0;
     }
     return game.whiteElo;
-  }, 
-   getBlackElo: (gameId: string) => {
+  },
+  getBlackElo: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game) {
       return 0;
     }
     return game.blackElo;
   },
+  getPositionsScores: (gameId:string)=>{
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game || game.status === "loading") {
+      return [];
+    }
+    const res = game.positions.map((pos, turn)=>{
+      return {
+        turn: turn,
+        percent: pos.scorePercent ?? 50
+      }
+    })
+
+    return res
+  }
 }));
