@@ -7,16 +7,19 @@ import AnalyzePanel from "./AnanyzePanel";
 
 function Analyze() {
   const { gameId } = useParams();
-  const { setGame } = useGameStore();
+  const { addGame,  setGame } = useGameStore();
   const { isLoading, error, data } = trpc.getPositions.useQuery({
     gameId: gameId ?? "",
   });
 
   React.useEffect(() => {
-    if (gameId && data) {
+    if (gameId && data&& data.status==="ready") {
       setGame(gameId, data.name, data.positions);
     }
-  }, [gameId, data, setGame]);
+    if (gameId && data && data.status==="generating"){
+      addGame(gameId, data.name)
+    }
+  }, [gameId, data, setGame, addGame]);
 
   if (isLoading || !gameId) {
     return <div>Loading</div>;
@@ -26,9 +29,13 @@ function Analyze() {
     return <div>{error.message}</div>;
   }
 
+  if (data && data.status === 'generating'){
+    return <div>Still Generating Analyze</div>
+  }
+
   return (
     <div className="h-full w-full flex items-center justify-center gap-12">
-      <BoardWithPlayers />
+      <BoardWithPlayers gameId={gameId}/>
       <AnalyzePanel gameId={gameId} />
     </div>
   );

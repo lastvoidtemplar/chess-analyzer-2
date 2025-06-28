@@ -233,12 +233,22 @@ export const appRouter = t.router({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      const positions = await getPositions(ctx.db, game.gameId)
-      return{
-        gameId:game.gameId,
-        name: game.name,
-        positions: positions
+      const positions = await getPositions(ctx.db, game.gameId);
+
+      if (positions[0].scoreUnit === null) {
+        return {
+          status: "generating" as const,
+          gameId: game.gameId,
+          name: game.name,
+        };
       }
+
+      return {
+        status: "ready" as const,
+        gameId: game.gameId,
+        name: game.name,
+        positions: positions,
+      };
     }),
 });
 

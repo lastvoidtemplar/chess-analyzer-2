@@ -105,8 +105,8 @@ export function createPositions(db: DB, gameId: string, fens: string[]) {
       })
       .run();
     let turn = 1;
-    for (const fen of fens) {
-      db.update(gamePositions)
+    for (const fen of fens.slice(1)) {
+      tx.update(gamePositions)
         .set({ fen })
         .where(
           and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn))
@@ -207,14 +207,38 @@ export async function deleteGame(db: DB, gameId: string) {
 export async function getPositions(db: DB, gameId: string) {
   const result = await db.select().from(gamePositions).where(eq(gamePositions.gameId, gameId))
 
-  const arr: Omit<InferSelectModel<typeof gamePositions>, 'gameId' | 'turn'>[]= new Array(result.length)
+  const arr: {san:string|null, lan:string|null, fen:string|null, scoreUnit:"cp"|"mate"|null, scoreValue: number|null}[]= new Array(result.length)
   result.forEach(el=>{
     arr[el.turn] = {
       san: el.san,
       lan: el.lan,
-      fen: el.fen
+      fen: el.fen,
+      scoreUnit: el.scoreUnit as "cp" | "mate",
+      scoreValue: el.scoreValue
     }
   })
 
   return arr
+}
+
+type Score = {
+  unit: "cp" | "mate";
+  score: number;
+};
+
+export function createScores(db: DB, gameId: string, scores: Score[]) {
+  db.transaction((tx) => {
+    let turn = 0
+    let minus = 1
+    for (const score of scores) {
+      tx.update(gamePositions)
+        .set({ scoreUnit:score.unit, scoreValue:minus*score.score })
+        .where(
+          and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn))
+        )
+        .run();
+      turn++;
+      minus*=-1 
+    }
+  });
 }

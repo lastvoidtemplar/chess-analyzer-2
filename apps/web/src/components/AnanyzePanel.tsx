@@ -15,33 +15,9 @@ type AnalyzePanelProps = {
 };
 
 function AnalyzePanel({ gameId }: AnalyzePanelProps) {
-  const [tab, setTab] = React.useState(() => 0);
-
   return (
     <div className="border-2 w-lg h-11/12 flex flex-col">
-      <div className="flex w-full">
-        <button
-          className={`border-b-2 grow text-center text-3xl ${
-            tab === 0 ? "bg-gray-600" : ""
-          }`}
-          onClick={() => setTab(0)}
-        >
-          Game
-        </button>
-        <button
-          className={`border-b-2 border-l-2 grow text-center text-3xl ${
-            tab === 1 ? "bg-gray-600" : ""
-          }`}
-          onClick={() => setTab(1)}
-        >
-          Lines
-        </button>
-      </div>
-      {tab === 0 ? (
         <PositionsAnalyzePanel gameId={gameId} />
-      ) : tab === 1 ? (
-        <LinesAnalyzePanel />
-      ) : undefined}
     </div>
   );
 }
@@ -63,19 +39,7 @@ function PositionsAnalyzePanel({ gameId }: AnalyzePanelProps) {
   );
 }
 
-function LinesAnalyzePanel() {
-  return <div></div>;
-  // return     <React.Fragment>
-  //   <MoveExplanationSection />
-  //   <LinesSection />
-  //   <PgnDisplay>
-  //     1. e4 e5 2. Nf3 Nc6 3. Nc3 Bc5 4. Qe2 d6 5. a4 Nf6 6. Ng5 O-O 7. g4 Bxg4
-  //     8. Qe3 Bxe3 9. fxe3 Qd7 10. Rg1 Be6 11. Nb5 d5 12. exd5 Qxd5 13. Rg4
-  //     Bxg4 14. Bd3 g6 15. Ne4 Nxe
-  //   </PgnDisplay>
-  //   <LinesControlPanel />
-  // </React.Fragment>
-}
+
 
 function MoveExplanationSection() {
   return (

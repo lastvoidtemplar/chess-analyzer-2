@@ -4,6 +4,8 @@ export type Position = {
   san: string | null;
   lan: string | null;
   fen: string | null;
+  scoreUnit : "cp" | "mate" | null
+  scoreValue : number |null
 };
 
 type GameState =
@@ -32,7 +34,10 @@ type GameStore = {
   pervTurn: (gameId: string) => void;
   nextTurn: (gameId: string) => void;
   lastTurn: (gameId: string) => void;
-  setTurn: (gameId:string, turn: number) =>void
+  setTurn: (gameId: string, turn: number) => void;
+  getCurrPosition: (gameId: string) => string;
+  getCurrScoreUnit: (gameId: string) => "cp"|"mate"| null;
+  getCurrScoreValue: (gameId: string) => number|  null;
 };
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -74,6 +79,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
         };
       } else {
         const game = prev.games[ind];
+
+        if (game.status === "loaded"){
+          return prev
+        }
+
         prev.games[ind] = {
           status: "loaded",
           gameId: gameId,
@@ -170,10 +180,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       };
     });
   },
-   setTurn: (gameId: string, turn: number) => {
+  setTurn: (gameId: string, turn: number) => {
     set((prev) => {
       const game = prev.games.find((curr) => curr.gameId === gameId);
-      if (!game || game.status === "loading" || turn < 0 || turn > game.positions.length - 1) {
+      if (
+        !game ||
+        game.status === "loading" ||
+        turn < 0 ||
+        turn > game.positions.length - 1
+      ) {
         return prev;
       }
       game.currTurn = turn;
@@ -181,5 +196,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
         games: [...prev.games],
       };
     });
+  },
+  getCurrPosition: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game || game.status === "loading") {
+      return "";
+    }
+    return game.positions[game.currTurn].fen ?? "";
+  },
+  getCurrScoreUnit: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game || game.status === "loading") {
+      return null;
+    }
+    return game.positions[game.currTurn].scoreUnit
+  }, 
+   getCurrScoreValue: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game || game.status === "loading") {
+      return null;
+    }
+    return game.positions[game.currTurn].scoreValue
   },
 }));
