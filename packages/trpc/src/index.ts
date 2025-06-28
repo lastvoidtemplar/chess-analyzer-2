@@ -16,6 +16,8 @@ import {
   getHeaders,
   getPositionNote,
   updatePositionNote,
+  saveMessage,
+  getMessages,
 } from "@repo/db";
 import { Subject } from "@repo/auth";
 import SuperJSON from "superjson";
@@ -23,7 +25,7 @@ import { parsePGN } from "./pgn";
 import Valkey from "iovalkey";
 import { publishFensTask } from "./valkey";
 import EventEmitter, { on } from "events";
-import { ms } from "zod/v4/locales";
+import { v4 as uuid } from "uuid";
 
 export interface Context {
   db: DB;
@@ -49,10 +51,8 @@ const protectedProcedure = t.procedure.use(({ input, ctx, next }) => {
 const ee = new EventEmitter();
 ee.setMaxListeners(0);
 
-let id = 0;
-
 type ChatMessage = {
-  id: number;
+  id: string;
   username: string;
   userPicture: string;
   message: string;
@@ -355,6 +355,31 @@ export const appRouter = t.router({
 
       await updatePositionNote(ctx.db, input.gameId, input.turn, input.note);
     }),
+  getChatMessages: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().nullish(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const messages = await getMessages(ctx.db, input.limit ?? 50);
+
+      const res:ChatMessage[] = messages.map(({messages,users})=>{
+        return {
+          id: messages.messageId,
+          username: users.username,
+          userPicture: users.picture,
+          message: messages.message,
+          timestamp: messages.timestamp
+        }
+      })
+
+      return res
+    }),
   sendChatMessage: protectedProcedure
     .input(z.object({ message: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -365,13 +390,20 @@ export const appRouter = t.router({
       const user = await getUser(ctx.db, ctx.subject.properties.userId);
 
       const chatMessage: ChatMessage = {
-        id: id,
+        id: uuid(),
         username: user.username,
         userPicture: user.picture,
         message: input.message,
         timestamp: Date.now(),
       };
-      id++;
+
+      await saveMessage(ctx.db, {
+        messageId: chatMessage.id,
+        userId: user.userId,
+        message: chatMessage.message,
+        timestamp: chatMessage.timestamp,
+      });
+
       ee.emit("message", chatMessage);
     }),
 

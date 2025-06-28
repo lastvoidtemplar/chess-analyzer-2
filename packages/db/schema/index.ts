@@ -53,7 +53,21 @@ export const gamePositions = sqliteTable(
     fen: text("fen"),
     scoreUnit: text("score_unit"),
     scoreValue: integer("score_value"),
-    note: text("note").default("Note...")
+    note: text("note").default("Note...").notNull(),
   },
   (table) => [primaryKey({ columns: [table.gameId, table.turn] })]
+);
+
+export const messages = sqliteTable(
+  "messages",
+  {
+    messageId: text("message_id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.userId, {
+        onDelete: "cascade",
+      }),
+      message: text("message").default("").notNull(),
+      timestamp: integer("timestamp").notNull()
+  },
 );

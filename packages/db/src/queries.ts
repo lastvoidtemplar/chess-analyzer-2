@@ -1,5 +1,12 @@
-import { and, eq, InferInsertModel, InferSelectModel, not } from "drizzle-orm";
-import { DB, gameHeaders, gamePositions, games, users } from ".";
+import {
+  and,
+  desc,
+  eq,
+  InferInsertModel,
+  InferSelectModel,
+  not,
+} from "drizzle-orm";
+import { DB, gameHeaders, gamePositions, games, messages, users } from ".";
 import { v4 as uuid } from "uuid";
 
 export async function checkIfUserExistById(db: DB, userId: string) {
@@ -260,7 +267,7 @@ export function createScores(db: DB, gameId: string, scores: Score[]) {
   });
 }
 
-export async  function getPositionNote(db: DB, gameId: string, turn: number) {
+export async function getPositionNote(db: DB, gameId: string, turn: number) {
   const res = await db
     .select({
       note: gamePositions.note,
@@ -269,20 +276,41 @@ export async  function getPositionNote(db: DB, gameId: string, turn: number) {
     .where(and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn)))
     .limit(1);
 
-  if (res.length === 0 || !res[0].note){
-    return ""
+  if (res.length === 0 || !res[0].note) {
+    return "";
   }
-  return res[0].note
+  return res[0].note;
 }
 
-export async  function updatePositionNote(db: DB, gameId: string, turn: number, note: string) {
+export async function updatePositionNote(
+  db: DB,
+  gameId: string,
+  turn: number,
+  note: string
+) {
   const res = await db
     .update(gamePositions)
     .set({
-      note: note
+      note: note,
     })
-    .where(and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn)))
+    .where(and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn)));
 
-  return res.lastInsertRowid
+  return res.lastInsertRowid;
 }
 
+type Message = typeof messages.$inferInsert;
+
+export async function saveMessage(db: DB, message: Message) {
+  const result = await db.insert(messages).values(message);
+  return result.lastInsertRowid.toString();
+}
+
+export async function getMessages(db: DB, limit: number = 50) {
+  const result = await db
+    .select()
+    .from(messages)
+    .innerJoin(users, eq(messages.userId, users.userId))
+    .orderBy(desc(messages.timestamp))
+    .limit(limit);
+  return result;
+}
