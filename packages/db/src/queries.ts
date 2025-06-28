@@ -1,4 +1,4 @@
-import { and, eq, InferInsertModel, InferSelectModel } from "drizzle-orm";
+import { and, eq, InferInsertModel, InferSelectModel, not } from "drizzle-orm";
 import { DB, gameHeaders, gamePositions, games, users } from ".";
 import { v4 as uuid } from "uuid";
 
@@ -80,7 +80,7 @@ export function createGame(
       for (let ind = 0; ind < sans.length; ind++) {
         movesBatch.push({
           gameId: gameId,
-          turn: ind+1,
+          turn: ind + 1,
           san: sans[ind],
           lan: lans[ind],
         });
@@ -164,6 +164,14 @@ export async function getGamesWithHeaders(
   return r;
 }
 
+export async function getHeaders(db: DB, gameId: string) {
+  const res = await db
+    .select()
+    .from(gameHeaders)
+    .where(eq(gameHeaders.gameId, gameId));
+  return res;
+}
+
 export async function getGame(db: DB, gameId: string) {
   const res = await db
     .select()
@@ -205,20 +213,29 @@ export async function deleteGame(db: DB, gameId: string) {
 }
 
 export async function getPositions(db: DB, gameId: string) {
-  const result = await db.select().from(gamePositions).where(eq(gamePositions.gameId, gameId))
+  const result = await db
+    .select()
+    .from(gamePositions)
+    .where(eq(gamePositions.gameId, gameId));
 
-  const arr: {san:string|null, lan:string|null, fen:string|null, scoreUnit:"cp"|"mate"|null, scoreValue: number|null}[]= new Array(result.length)
-  result.forEach(el=>{
+  const arr: {
+    san: string | null;
+    lan: string | null;
+    fen: string | null;
+    scoreUnit: "cp" | "mate" | null;
+    scoreValue: number | null;
+  }[] = new Array(result.length);
+  result.forEach((el) => {
     arr[el.turn] = {
       san: el.san,
       lan: el.lan,
       fen: el.fen,
       scoreUnit: el.scoreUnit as "cp" | "mate",
-      scoreValue: el.scoreValue
-    }
-  })
+      scoreValue: el.scoreValue,
+    };
+  });
 
-  return arr
+  return arr;
 }
 
 type Score = {
@@ -228,17 +245,44 @@ type Score = {
 
 export function createScores(db: DB, gameId: string, scores: Score[]) {
   db.transaction((tx) => {
-    let turn = 0
-    let minus = 1
+    let turn = 0;
+    let minus = 1;
     for (const score of scores) {
       tx.update(gamePositions)
-        .set({ scoreUnit:score.unit, scoreValue:minus*score.score })
+        .set({ scoreUnit: score.unit, scoreValue: minus * score.score })
         .where(
           and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn))
         )
         .run();
       turn++;
-      minus*=-1 
+      minus *= -1;
     }
   });
 }
+
+export async  function getPositionNote(db: DB, gameId: string, turn: number) {
+  const res = await db
+    .select({
+      note: gamePositions.note,
+    })
+    .from(gamePositions)
+    .where(and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn)))
+    .limit(1);
+
+  if (res.length === 0 || !res[0].note){
+    return ""
+  }
+  return res[0].note
+}
+
+export async  function updatePositionNote(db: DB, gameId: string, turn: number, note: string) {
+  const res = await db
+    .update(gamePositions)
+    .set({
+      note: note
+    })
+    .where(and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn)))
+
+  return res.lastInsertRowid
+}
+

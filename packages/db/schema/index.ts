@@ -52,7 +52,8 @@ export const gamePositions = sqliteTable(
     lan: text("lan"),
     fen: text("fen"),
     scoreUnit: text("score_unit"),
-    scoreValue: integer("score_value")
+    scoreValue: integer("score_value"),
+    note: text("note").default("Note...")
   },
   (table) => [primaryKey({ columns: [table.gameId, table.turn] })]
 );

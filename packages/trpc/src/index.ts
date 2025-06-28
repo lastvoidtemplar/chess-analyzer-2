@@ -13,6 +13,9 @@ import {
   updateGame,
   updateGameHeaders,
   getPositions,
+  getHeaders,
+  getPositionNote,
+  updatePositionNote,
 } from "@repo/db";
 import { Subject } from "@repo/auth";
 import SuperJSON from "superjson";
@@ -233,6 +236,37 @@ export const appRouter = t.router({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
+      const headers = await getHeaders(ctx.db, game.gameId);
+      let white = "Player 1";
+      let black = "Player 2";
+      let whiteElo = 1400;
+      let blackElo = 1400;
+
+      for (const header of headers) {
+        switch (header.header) {
+          case "White":
+            white = header.value;
+            break;
+          case "Black":
+            black = header.value;
+            break;
+          case "WhiteElo":
+            try {
+              whiteElo = parseInt(header.value);
+            } catch (err) {
+              console.log(`Game Id - ${game.gameId}, White elo is not int`);
+            }
+            break;
+          case "BlackElo":
+            try {
+              blackElo = parseInt(header.value);
+            } catch (err) {
+              console.log(`Game Id - ${game.gameId}, Black elo is not int`);
+            }
+            break;
+        }
+      }
+
       const positions = await getPositions(ctx.db, game.gameId);
 
       if (positions[0].scoreUnit === null) {
@@ -240,6 +274,10 @@ export const appRouter = t.router({
           status: "generating" as const,
           gameId: game.gameId,
           name: game.name,
+          white,
+          black,
+          whiteElo,
+          blackElo,
         };
       }
 
@@ -248,7 +286,59 @@ export const appRouter = t.router({
         gameId: game.gameId,
         name: game.name,
         positions: positions,
+        white,
+        black,
+        whiteElo,
+        blackElo,
       };
+    }),
+  getPositionNote: protectedProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+        turn: z.number(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+      const game = await getGame(ctx.db, input.gameId);
+      if (!game) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      if (game.userId !== ctx.subject.properties.userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const note = await getPositionNote(ctx.db, input.gameId, input.turn);
+
+      return {
+        note,
+      };
+    }),
+
+  updatePositionNote: protectedProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+        turn: z.number(),
+        note: z.string()
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+      const game = await getGame(ctx.db, input.gameId);
+      if (!game) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+      if (game.userId !== ctx.subject.properties.userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      await updatePositionNote(ctx.db, input.gameId, input.turn, input.note);
     }),
 });
 

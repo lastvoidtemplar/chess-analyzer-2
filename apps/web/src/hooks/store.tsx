@@ -4,8 +4,8 @@ export type Position = {
   san: string | null;
   lan: string | null;
   fen: string | null;
-  scoreUnit : "cp" | "mate" | null
-  scoreValue : number |null
+  scoreUnit: "cp" | "mate" | null;
+  scoreValue: number | null;
 };
 
 type GameState =
@@ -15,17 +15,40 @@ type GameState =
       name: string;
       currTurn: number;
       positions: Position[];
+      white: string;
+      black: string;
+      whiteElo: number;
+      blackElo: number;
     }
   | {
       status: "loading";
       gameId: string;
       name: string;
+      white: string;
+      black: string;
+      whiteElo: number;
+      blackElo: number;
     };
 
 type GameStore = {
   games: GameState[];
-  addGame: (gameId: string, name: string) => void;
-  setGame: (gameId: string, name: string, positions: Position[]) => void;
+  addGame: (
+    gameId: string,
+    name: string,
+    white?: string,
+    black?: string,
+    whiteElo?: number,
+    blackElo?: number
+  ) => void;
+  setGame: (
+    gameId: string,
+    name: string,
+    white: string,
+    black: string,
+    whiteElo: number,
+    blackElo: number,
+    positions: Position[]
+  ) => void;
   updateName: (gameId: string, name: string) => void;
   removeGame: (gameId: string) => void;
   getPositions: (gameId: string) => Position[];
@@ -36,13 +59,24 @@ type GameStore = {
   lastTurn: (gameId: string) => void;
   setTurn: (gameId: string, turn: number) => void;
   getCurrPosition: (gameId: string) => string;
-  getCurrScoreUnit: (gameId: string) => "cp"|"mate"| null;
-  getCurrScoreValue: (gameId: string) => number|  null;
+  getCurrScoreUnit: (gameId: string) => "cp" | "mate" | null;
+  getCurrScoreValue: (gameId: string) => number | null;
+  getWhite: (gameId: string) => string;
+  getBlack: (gameId: string) => string;
+  getWhiteElo: (gameId: string) => number;
+  getBlackElo: (gameId: string) => number;
 };
 
 export const useGameStore = create<GameStore>((set, get) => ({
   games: [],
-  addGame: (gameId: string, name: string) => {
+  addGame: (
+    gameId: string,
+    name: string,
+    white: string = "Player 1",
+    black: string = "Player 2",
+    whiteElo: number = 1400,
+    blackElo: number = 1400
+  ) => {
     set((prev) => {
       const ind = prev.games.findIndex((curr) => curr.gameId === gameId);
       if (ind !== -1) {
@@ -56,12 +90,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
             status: "loading",
             gameId: gameId,
             name: name,
+            white,
+            black,
+            whiteElo,
+            blackElo,
           },
         ],
       };
     });
   },
-  setGame: (gameId: string, name: string, positions: Position[]) => {
+  setGame: (
+    gameId: string,
+    name: string,
+    white: string,
+    black: string,
+    whiteElo: number,
+    blackElo: number,
+    positions: Position[]
+  ) => {
     set((prev) => {
       const ind = prev.games.findIndex((curr) => curr.gameId === gameId);
       if (ind === -1) {
@@ -74,14 +120,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
               name: name,
               currTurn: 0,
               positions: positions,
+              white,
+              black,
+              whiteElo,
+              blackElo,
             },
           ],
         };
       } else {
         const game = prev.games[ind];
 
-        if (game.status === "loaded"){
-          return prev
+        if (game.status === "loaded") {
+          return prev;
         }
 
         prev.games[ind] = {
@@ -90,6 +140,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
           name: game.name,
           currTurn: 0,
           positions: positions,
+          white,
+          black,
+          whiteElo,
+          blackElo,
         };
       }
       return {
@@ -209,13 +263,41 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!game || game.status === "loading") {
       return null;
     }
-    return game.positions[game.currTurn].scoreUnit
-  }, 
-   getCurrScoreValue: (gameId: string) => {
+    return game.positions[game.currTurn].scoreUnit;
+  },
+  getCurrScoreValue: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game || game.status === "loading") {
       return null;
     }
-    return game.positions[game.currTurn].scoreValue
+    return game.positions[game.currTurn].scoreValue;
+  }, 
+  getWhite: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game) {
+      return "";
+    }
+    return game.white;
+  }, 
+   getBlack: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game) {
+      return "";
+    }
+    return game.black;
+  }, 
+   getWhiteElo: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game) {
+      return 0;
+    }
+    return game.whiteElo;
+  }, 
+   getBlackElo: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game) {
+      return 0;
+    }
+    return game.blackElo;
   },
 }));

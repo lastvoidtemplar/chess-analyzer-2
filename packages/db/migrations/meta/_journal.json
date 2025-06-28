@@ -15,6 +15,20 @@
       "when": 1751061908217,
       "tag": "0001_colorful_ben_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1751105132112,
+      "tag": "0002_faithful_senator_kelly",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1751108613758,
+      "tag": "0003_kind_gressill",
+      "breakpoints": true
     }
   ]
 }

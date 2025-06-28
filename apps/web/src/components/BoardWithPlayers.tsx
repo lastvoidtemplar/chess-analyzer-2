@@ -19,13 +19,18 @@ type BoardWithPlayersProps = {
 };
 
 function BoardWithPlayers({ gameId }: BoardWithPlayersProps) {
+  const white = useGameStore((state) => state.getWhite(gameId));
+  const black = useGameStore((state) => state.getBlack(gameId));
+  const whiteElo = useGameStore((state) => state.getWhiteElo(gameId));
+  const blackElo = useGameStore((state) => state.getBlackElo(gameId));
+
   return (
     <div className="flex gap-2">
       <EvaluationBar gameId={gameId} />
       <div className="flex flex-col gap-2">
-        <PlayerInfo playeName="Player1" playerElo={1400} />
+        <PlayerInfo playeName={black} playerElo={blackElo} />
         <Board gameId={gameId} />
-        <PlayerInfo playeName="Player2" playerElo={1400} />
+        <PlayerInfo playeName={white} playerElo={whiteElo} />
       </div>
     </div>
   );
@@ -182,9 +187,8 @@ type EvaluationBarProps = {
 };
 
 function EvaluationBar({ gameId }: EvaluationBarProps) {
-  const scoreUnit= useGameStore(state=>state.getCurrScoreUnit(gameId));
-  const scoreValue= useGameStore(state=>state.getCurrScoreValue(gameId));
-
+  const scoreUnit = useGameStore((state) => state.getCurrScoreUnit(gameId));
+  const scoreValue = useGameStore((state) => state.getCurrScoreValue(gameId));
 
   const percent = React.useMemo(() => {
     if (!scoreUnit || !scoreValue) {
@@ -207,10 +211,18 @@ function EvaluationBar({ gameId }: EvaluationBarProps) {
         }}
         className="relative w-full bg-white transition-all duration-700 ease-in-out"
       >
-        {percent==100&&<p className="text-black text-center absolute bottom-0">{scoreUnit==='mate'? `${scoreValue}M`:`${scoreValue!/100}`}</p>}
+        {percent == 100 && (
+          <p className="text-black text-center absolute bottom-0 left-1/2 -translate-x-1/2">
+            {scoreUnit === "mate" ? `${scoreValue}M` : `${scoreValue! / 100}`}
+          </p>
+        )}
       </div>
       <div className="w-full grow bg-black">
-        {percent!==100&&<p className="text-white text-center">{scoreUnit==='mate'? `${scoreValue}M`:`${scoreValue!/100}`}</p>}
+        {percent !== 100 && (
+          <p className="text-white text-center">
+            {scoreUnit === "mate" ? `${scoreValue}M` : `${scoreValue! / 100}`}
+          </p>
+        )}
       </div>
     </div>
   );

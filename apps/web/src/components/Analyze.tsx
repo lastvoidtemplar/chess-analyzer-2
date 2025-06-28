@@ -14,10 +14,10 @@ function Analyze() {
 
   React.useEffect(() => {
     if (gameId && data&& data.status==="ready") {
-      setGame(gameId, data.name, data.positions);
+      setGame(gameId, data.name,data.white, data.black, data.whiteElo, data.blackElo ,data.positions);
     }
     if (gameId && data && data.status==="generating"){
-      addGame(gameId, data.name)
+      addGame(gameId, data.name, data.white, data.black, data.whiteElo, data.blackElo)
     }
   }, [gameId, data, setGame, addGame]);
 

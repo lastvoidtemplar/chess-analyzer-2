@@ -1,5 +1,4 @@
 import React from "react";
-import Ollama from "../assets/ollama.png";
 import Graph from "../assets/graph.png";
 import { useGameStore, type Position } from "../hooks/store";
 import {
@@ -9,6 +8,10 @@ import {
   ArrowRightToLine,
 } from "lucide-react";
 import clsx from "clsx";
+import Form from "./Form";
+import Button from "./Button";
+import TextArea, { type TextAreaHandle } from "./TextArea";
+import { trpc } from "../hooks/trpc";
 
 type AnalyzePanelProps = {
   gameId: string;
@@ -17,7 +20,7 @@ type AnalyzePanelProps = {
 function AnalyzePanel({ gameId }: AnalyzePanelProps) {
   return (
     <div className="border-2 w-lg h-11/12 flex flex-col">
-        <PositionsAnalyzePanel gameId={gameId} />
+      <PositionsAnalyzePanel gameId={gameId} />
     </div>
   );
 }
@@ -32,31 +35,59 @@ function PositionsAnalyzePanel({ gameId }: AnalyzePanelProps) {
 
   return (
     <React.Fragment>
-      <MoveExplanationSection />
+      <PositionNoteMenu gameId={gameId} />
+      <hr className="mx-4" />
       <GameHistory gameId={gameId} positions={positions} />
       <ReviewControlPanel gameId={gameId} />
     </React.Fragment>
   );
 }
 
+type PositionNoteMenuProps = {
+  gameId: string;
+};
 
+function PositionNoteMenu({ gameId }: PositionNoteMenuProps) {
+  const currTurn = useGameStore((state) => state.getCurrTurn(gameId));
+  const { isLoading, error, data } = trpc.getPositionNote.useQuery({
+    gameId: gameId ?? "",
+    turn: currTurn,
+  });
 
-function MoveExplanationSection() {
+  const updatePositionNote = trpc.updatePositionNote.useMutation();
+  const noteRef = React.useRef<TextAreaHandle>(null);
+
+  const onSubmit = React.useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (noteRef.current) {
+        updatePositionNote.mutate({
+          gameId: gameId,
+          turn: currTurn,
+          note: noteRef.current.getValue(),
+        });
+      }
+    },
+    [updatePositionNote, gameId, currTurn]
+  );
+
   return (
-    <div className="mx-4 mt-4">
-      <div className="relative p-4 rounded-lg border-2">
-        Lorem ipsum dolor sit, amet consectetur adipisicing elit. Explicabo,
-        amet natus? Esse sapiente incidunt corrupti architecto assumenda atque,
-        debitis minima minus soluta voluptates voluptatum culpa earum harum hic
-        ex maxime!
-        <div
-          className="absolute -bottom-2 left-4 w-0 h-0 
-              border-l-8 border-l-transparent 
-              border-r-8 border-r-transparent 
-              border-t-8 border-t-black"
-        ></div>
-      </div>
-      <img src={Ollama} className="w-12 pl-1" />
+    <div className="mx-4 my-4">
+      <Form className="flex flex-col gap-2" onSubmit={onSubmit}>
+        <TextArea
+          rows={5}
+          fieldName="note"
+          ref={noteRef}
+          value={
+            isLoading
+              ? "Loading..."
+              : error
+                ? error.message
+                : (data?.note ?? "")
+          }
+        />
+        <Button>Update Note</Button>
+      </Form>
     </div>
   );
 }
@@ -89,7 +120,7 @@ function GameHistory({ gameId, positions }: GameHistoryProps) {
           "col-span-2 px-1 text-lg text-center",
           currTurn === 0 ? "border-1" : ""
         )}
-        onClick={()=>setTurn(gameId, 0)}
+        onClick={() => setTurn(gameId, 0)}
       >
         Starting position
       </span>
