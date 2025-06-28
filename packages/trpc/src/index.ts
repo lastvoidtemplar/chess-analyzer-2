@@ -1,4 +1,4 @@
-import { initTRPC, TRPCError } from "@trpc/server";
+import { inferRouterOutputs, initTRPC, tracked, TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
   createGame,
@@ -22,6 +22,8 @@ import SuperJSON from "superjson";
 import { parsePGN } from "./pgn";
 import Valkey from "iovalkey";
 import { publishFensTask } from "./valkey";
+import EventEmitter, { on } from "events";
+import { ms } from "zod/v4/locales";
 
 export interface Context {
   db: DB;
@@ -43,6 +45,19 @@ const protectedProcedure = t.procedure.use(({ input, ctx, next }) => {
     input: input,
   });
 });
+
+const ee = new EventEmitter();
+ee.setMaxListeners(0);
+
+let id = 0;
+
+type ChatMessage = {
+  id: number;
+  username: string;
+  userPicture: string;
+  message: string;
+  timestamp: number;
+};
 
 export const appRouter = t.router({
   hello: publicProcedure.query(() => {
@@ -323,7 +338,7 @@ export const appRouter = t.router({
       z.object({
         gameId: z.string(),
         turn: z.number(),
-        note: z.string()
+        note: z.string(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -340,7 +355,37 @@ export const appRouter = t.router({
 
       await updatePositionNote(ctx.db, input.gameId, input.turn, input.note);
     }),
+  sendChatMessage: protectedProcedure
+    .input(z.object({ message: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const user = await getUser(ctx.db, ctx.subject.properties.userId);
+
+      const chatMessage: ChatMessage = {
+        id: id,
+        username: user.username,
+        userPicture: user.picture,
+        message: input.message,
+        timestamp: Date.now(),
+      };
+      id++;
+      ee.emit("message", chatMessage);
+    }),
+
+  onChatMessage: protectedProcedure.subscription(async function* ({ signal }) {
+    for await (const [msg] of on(ee, "message", {
+      signal,
+    }) as AsyncIterable<ChatMessage[]>) {
+      console.log(msg);
+
+      yield tracked(msg.id.toString(), msg);
+    }
+  }),
 });
 
 export type GameWithHeaders = GameWithHeadersType;
 export type AppRouter = typeof appRouter;
+export type RouterOutputs = inferRouterOutputs<AppRouter>;

@@ -11,20 +11,22 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.0",
+    "@types/ws": "^8.18.1",
     "tsup": "^8.5.0",
     "typescript": "5.8.2"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.4",
     "@openauthjs/openauth": "^0.4.3",
-    "@repo/valkey": "workspace:",
     "@repo/auth": "workspace:",
     "@repo/db": "workspace:",
     "@repo/trpc": "workspace:",
+    "@repo/valkey": "workspace:",
     "@trpc/server": "^11.3.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "iovalkey": "^0.3.3"
+    "iovalkey": "^0.3.3",
+    "ws": "^8.18.3"
   }
 }

@@ -8,6 +8,7 @@ import Profile from "./components/Profile";
 import NotFound from "./components/NotFound";
 import Games from "./components/Games";
 import Analyze from "./components/Analyze";
+import ChatRoom from "./components/ChatRoom";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
               <Route index element={<Home />} />
               <Route element={<ProtectedLayout />}>
                 <Route path="/games" element={<Games />} />
+                <Route path="/chat" element={<ChatRoom/>}/>
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/analyze/:gameId" element={<Analyze/>} />
               </Route>

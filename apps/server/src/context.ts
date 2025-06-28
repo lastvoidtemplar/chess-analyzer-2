@@ -1,15 +1,14 @@
 import type { Context } from "@repo/trpc";
 import { CreateExpressContextOptions } from "@trpc/server/adapters/express";
+import type { CreateWSSContextFnOptions } from '@trpc/server/adapters/ws';
 import { auth } from "./auth";
 import { subjects } from "@repo/auth";
 import { getDB, valkey } from "./config";
 
 const db = getDB();
 
-export async function createContext({
-  req,
-}: CreateExpressContextOptions): Promise<Context> {
-  const header = req.headers.authorization;
+export async function createContext({info}: CreateWSSContextFnOptions): Promise<Context> {
+  const header = info.connectionParams?.Authorization;
 
   if (!header) {
     return { db ,valkey};
