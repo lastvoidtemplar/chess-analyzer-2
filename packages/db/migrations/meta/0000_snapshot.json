@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "223b2ae7-839d-496d-a80a-4e759992e191",
+  "id": "a2b26ad1-19e8-454f-a622-0522a4ea05a1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "game_headers": {
@@ -94,6 +94,36 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "score_unit": {
+          "name": "score_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "score_value": {
+          "name": "score_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Note...'"
+        },
+        "lines_generated": {
+          "name": "lines_generated",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {},
@@ -169,6 +199,230 @@
         "games_user_id_users_user_id_fk": {
           "name": "games_user_id_users_user_id_fk",
           "tableFrom": "games",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "lines": {
+      "name": "lines",
+      "columns": {
+        "game_id": {
+          "name": "game_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "game_turn": {
+          "name": "game_turn",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "line": {
+          "name": "line",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "score_unit": {
+          "name": "score_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "score_value": {
+          "name": "score_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "lines_game_id_game_turn_game_positions_game_id_turn_fk": {
+          "name": "lines_game_id_game_turn_game_positions_game_id_turn_fk",
+          "tableFrom": "lines",
+          "tableTo": "game_positions",
+          "columnsFrom": [
+            "game_id",
+            "game_turn"
+          ],
+          "columnsTo": [
+            "game_id",
+            "turn"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "lines_game_id_game_turn_line_pk": {
+          "columns": [
+            "game_id",
+            "game_turn",
+            "line"
+          ],
+          "name": "lines_game_id_game_turn_line_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "lines_positiions": {
+      "name": "lines_positiions",
+      "columns": {
+        "game_id": {
+          "name": "game_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "game_turn": {
+          "name": "game_turn",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "line": {
+          "name": "line",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "line_turn": {
+          "name": "line_turn",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "san": {
+          "name": "san",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lan": {
+          "name": "lan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "fen": {
+          "name": "fen",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "score_unit": {
+          "name": "score_unit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "score_value": {
+          "name": "score_value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "lines_positiions_game_id_game_turn_line_lines_game_id_game_turn_line_fk": {
+          "name": "lines_positiions_game_id_game_turn_line_lines_game_id_game_turn_line_fk",
+          "tableFrom": "lines_positiions",
+          "tableTo": "lines",
+          "columnsFrom": [
+            "game_id",
+            "game_turn",
+            "line"
+          ],
+          "columnsTo": [
+            "game_id",
+            "game_turn",
+            "line"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "lines_positiions_game_id_game_turn_line_line_turn_pk": {
+          "columns": [
+            "game_id",
+            "game_turn",
+            "line",
+            "line_turn"
+          ],
+          "name": "lines_positiions_game_id_game_turn_line_line_turn_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "messages": {
+      "name": "messages",
+      "columns": {
+        "message_id": {
+          "name": "message_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "messages_user_id_users_user_id_fk": {
+          "name": "messages_user_id_users_user_id_fk",
+          "tableFrom": "messages",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"

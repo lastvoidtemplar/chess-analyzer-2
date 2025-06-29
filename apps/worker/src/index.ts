@@ -287,7 +287,7 @@ function handleLinesMessage(
               });
             }
           } else {
-            send(`position fen ${fens[lansInd - 1]}`);
+            send(`position fen ${fens[lansInd - 1]} moves ${lans[lineInd2][lansInd]}`);
             send("d");
           }
         }

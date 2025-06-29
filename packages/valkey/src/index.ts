@@ -20,7 +20,7 @@ type FensMessage = {
 };
 
 type Score = {
-  unit: "cp" | "mate" ;
+  unit: "cp" | "mate";
   score: number;
 };
 
@@ -160,7 +160,7 @@ async function handleLinesMessage(
           lan: pos.lan,
           fen: pos.fen,
           scoreUnit: pos.score.unit,
-          scoreValue: pos.score.score,
+          scoreValue: Math.pow(-1, lineTurn) * pos.score.score,
         };
       }
 
@@ -173,7 +173,7 @@ async function handleLinesMessage(
         lan: undefined,
         fen: pos.fen,
         scoreUnit: pos.score.unit as "cp" | "mate",
-        scoreValue: pos.score.score ?? 0,
+        scoreValue: Math.pow(-1, lineTurn) * (pos.score.score ?? 0),
       };
     });
     createLine(db, gameId, gameTurn, line, lineScore, linePositions);

@@ -244,14 +244,22 @@ type LinesControlPanelProps = {
   setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
 };
 
-function LinesControlPanel({ setPanel }: LinesControlPanelProps) {
+function LinesControlPanel({ gameId, setPanel }: LinesControlPanelProps) {
+  const {
+    firstLineTurn,
+    pervLineTurn,
+    nextLineTurn,
+    lastLineTurn,
+    setLineTurn,
+  } = useGameStore();
+
   return (
     <div className="mx-4 flex-col items-center">
       <div className="flex justify-evenly w-full my-2">
-        <button className="border-2 px-4">
+        <button className="border-2 px-4" onClick={() => firstLineTurn(gameId)}>
           <ArrowLeftToLine color="black" size={ButtonSize} />
         </button>
-        <button className="border-2 px-4">
+        <button className="border-2 px-4" onClick={() => pervLineTurn(gameId)}>
           <ArrowLeft color="black" size={ButtonSize} />
         </button>
 
@@ -259,14 +267,17 @@ function LinesControlPanel({ setPanel }: LinesControlPanelProps) {
           <View
             color="black"
             size={ButtonSize}
-            onClick={() => setPanel("positions")}
+            onClick={() => {
+              setLineTurn(gameId, -1, -1);
+              setPanel("positions");
+            }}
           />
         </button>
 
-        <button className="border-2 px-4">
+        <button className="border-2 px-4" onClick={() => nextLineTurn(gameId)}>
           <ArrowRight color="black" size={ButtonSize} />
         </button>
-        <button className="border-2 px-4">
+        <button className="border-2 px-4" onClick={() => lastLineTurn(gameId)}>
           <ArrowRightToLine color="black" size={ButtonSize} />
         </button>
       </div>
@@ -387,7 +398,8 @@ function LinesHistory({ gameId }: LinesHistoryProps) {
               )}
               onClick={() => setLineTurn(gameId, lineInd, 0)}
             >
-              Line {line.line}
+              Line {line.line} - {line.scoreValue}
+              {line.scoreUnit === "mate" && "M"}
             </button>
             {line.positions.slice(1).map((pos, ind) => {
               return (
@@ -400,7 +412,7 @@ function LinesHistory({ gameId }: LinesHistoryProps) {
                   <button
                     className={clsx(
                       "px-1 text-lg text-center",
-                      currLine === lineInd && currLineTurn === ind+1
+                      currLine === lineInd && currLineTurn === ind + 1
                         ? "border-1"
                         : ""
                     )}
@@ -414,7 +426,7 @@ function LinesHistory({ gameId }: LinesHistoryProps) {
             {line.positions.length % 2 == 0 && (
               <span className="px-1 text-lg text-center"></span>
             )}
-            <hr className="col-span-3 ml-4" />
+            <hr className="col-span-3 ml-4 my-1" />
           </React.Fragment>
         );
       })}

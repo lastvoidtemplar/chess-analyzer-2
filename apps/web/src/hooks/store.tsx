@@ -79,6 +79,10 @@ type GameStore = {
   setTurn: (gameId: string, turn: number) => void;
   getCurrLine: (gameId: string) => number;
   getCurrLineTurn: (gameId: string) => number;
+  firstLineTurn: (gameId: string) => void;
+  pervLineTurn: (gameId: string) => void;
+  nextLineTurn: (gameId: string) => void;
+  lastLineTurn: (gameId: string) => void;
   setLineTurn: (gameId: string, line: number, lineTurn: number) => void;
   getCurrPosition: (gameId: string) => string;
   getCurrScoreUnit: (gameId: string) => "cp" | "mate" | null;
@@ -310,21 +314,98 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
     return game.currLineTurn;
   },
-  setLineTurn: (gameId: string, line: number, lineTurn: number) => {
+  firstLineTurn: (gameId: string) => {
     set((prev) => {
       const game = prev.games.find((curr) => curr.gameId === gameId);
       if (
         !game ||
         game.status === "loading" ||
+        (game.currLine === -1 && game.currLineTurn === -1)
+      ) {
+        return prev;
+      }
+      game.currLineTurn = 0;
+      return {
+        games: [...prev.games],
+      };
+    });
+  },
+  pervLineTurn: (gameId: string) => {
+    set((prev) => {
+      const game = prev.games.find((curr) => curr.gameId === gameId);
+      if (
+        !game ||
+        game.status === "loading" ||
+        (game.currLine === -1 && game.currLineTurn === -1) ||
+        game.currLineTurn === 0
+      ) {
+        return prev;
+      }
+      if (game.currLineTurn > 0) {
+        game.currLineTurn--;
+      }
+      return {
+        games: [...prev.games],
+      };
+    });
+  },
+  nextLineTurn: (gameId: string) => {
+    set((prev) => {
+      const game = prev.games.find((curr) => curr.gameId === gameId);
+      if (
+        !game ||
+        game.status === "loading" ||
+        (game.currLine === -1 && game.currLineTurn === -1) ||
+        game.currLineTurn === game.positions[game.currTurn].lines[game.currLine].positions.length - 1
+      ) {
+        return prev;
+      }
+      if (game.currLineTurn < game.positions[game.currTurn].lines[game.currLine].positions.length - 1) {
+        game.currLineTurn++;
+      }
+      return {
+        games: [...prev.games],
+      };
+    });
+  },
+  lastLineTurn: (gameId: string) => {
+    set((prev) => {
+      const game = prev.games.find((curr) => curr.gameId === gameId);
+      if (
+        !game ||
+        game.status === "loading" ||
+        (game.currLine === -1 && game.currLineTurn === -1)
+      ) {
+        return prev;
+      }
+      game.currLineTurn = game.positions[game.currTurn].lines[game.currLine].positions.length - 1;
+      return {
+        games: [...prev.games],
+      };
+    });
+  },
+  setLineTurn: (gameId: string, line: number, lineTurn: number) => {
+    set((prev) => {
+      const game = prev.games.find((curr) => curr.gameId === gameId);
+      if (game && game.status === "loaded" && line === -1 && lineTurn === -1) {
+        game.currLine = line;
+        game.currLineTurn = lineTurn;
+        return {
+          games: [...prev.games],
+        };
+      }
+
+      if (
+        !game ||
+        game.status === "loading" ||
         line < -1 ||
-        lineTurn < -1||
+        lineTurn < -1 ||
         game.positions[game.currTurn].lines.length <= line ||
         game.positions[game.currTurn].lines[line].positions.length <= lineTurn
       ) {
         return prev;
       }
 
-      
       game.currLine = line;
       game.currLineTurn = lineTurn;
       return {
@@ -337,28 +418,55 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!game || game.status === "loading") {
       return "";
     }
-    return game.positions[game.currTurn].fen ?? "";
+
+    if (game.currLine === -1 && game.currLineTurn === -1) {
+      return game.positions[game.currTurn].fen ?? "";
+    }
+    return (
+      game.positions[game.currTurn].lines[game.currLine].positions[
+        game.currLineTurn
+      ].fen ?? ""
+    );
   },
   getCurrScoreUnit: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game || game.status === "loading") {
       return null;
     }
-    return game.positions[game.currTurn].scoreUnit;
+
+    if (game.currLine === -1 && game.currLineTurn === -1) {
+      return game.positions[game.currTurn].scoreUnit;
+    }
+    return game.positions[game.currTurn].lines[game.currLine].positions[
+      game.currLineTurn
+    ].scoreUnit;
   },
   getCurrScoreValue: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game || game.status === "loading") {
       return null;
     }
-    return game.positions[game.currTurn].scoreValue;
+
+    if (game.currLine === -1 && game.currLineTurn === -1) {
+      return game.positions[game.currTurn].scoreValue;
+    }
+    return game.positions[game.currTurn].lines[game.currLine].positions[
+      game.currLineTurn
+    ].scoreValue;
   },
   getCurrScorePercent: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game || game.status === "loading") {
       return 50;
     }
-    return game.positions[game.currTurn].scorePercent ?? 50;
+    if (game.currLine === -1 && game.currLineTurn === -1) {
+      return game.positions[game.currTurn].scorePercent ?? 50;
+    }
+    return (
+      game.positions[game.currTurn].lines[game.currLine].positions[
+        game.currLineTurn
+      ].scorePercent ?? 50
+    );
   },
   getWhite: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
@@ -411,6 +519,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
       game.currLine = 0;
       game.currLineTurn = 0;
       game.positions[gameTurn].lines = [...lines];
+      game.positions[gameTurn].lines.forEach((line) =>
+        line.positions.forEach((pos) => {
+          if (!pos.scoreUnit || !pos.scoreValue) {
+            pos.scorePercent = 50;
+            return;
+          }
+
+          if (pos.scoreUnit === "mate") {
+            pos.scorePercent = pos.scoreValue > 0 ? 100 : 0;
+            return;
+          }
+
+          const capped = Math.max(-1000, Math.min(1000, pos.scoreValue));
+          pos.scorePercent = parseFloat((50 - capped / 20).toFixed(2));
+        })
+      );
+
       return {
         games: [...prev.games],
       };
