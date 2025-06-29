@@ -15,6 +15,7 @@ import TextArea, { type TextAreaHandle } from "./TextArea";
 import { trpc } from "../hooks/trpc";
 import { ResponsiveContainer, AreaChart, Area } from "recharts";
 import type { CategoricalChartFunc } from "recharts/types/chart/types";
+import type { RouterOutputs } from "@repo/trpc";
 
 type AnalyzePanelProps = {
   gameId: string;
@@ -212,6 +213,9 @@ const ButtonSize: number = 56;
 function ReviewControlPanel({ gameId, setPanel }: ReviewControlPanelProps) {
   const { firstTurn, pervTurn, nextTurn, lastTurn } = useGameStore();
 
+  const currTurn = useGameStore((state) => state.getCurrTurn(gameId));
+  const generateLines = trpc.generateLines.useMutation();
+
   return (
     <div className="mx-4 flex flex-col items-center">
       <div className="flex justify-evenly w-full my-2">
@@ -225,7 +229,10 @@ function ReviewControlPanel({ gameId, setPanel }: ReviewControlPanelProps) {
           <TextSearch
             color="black"
             size={ButtonSize}
-            onClick={() => setPanel("lines")}
+            onClick={() => {
+              generateLines.mutate({ gameId: gameId, turn: currTurn });
+              setPanel("lines");
+            }}
           />
         </button>
         <button className="border-2 px-4" onClick={() => nextTurn(gameId)}>
@@ -342,6 +349,9 @@ const ScoresChart = React.memo(({ gameId }: ScoreChartType) => {
   );
 });
 
+type ExtractYieldedType<T> = T extends AsyncIterable<infer U> ? U : never;
+type OutputLine = ExtractYieldedType<RouterOutputs["onLineGeneration"]>["data"];
+
 type LinesHistoryProps = {
   gameId: string;
 };
@@ -355,17 +365,33 @@ function LinesHistory({ gameId }: LinesHistoryProps) {
     gameId: gameId,
     gameTurn: currTurn,
   });
+  const [lines, setLines] = React.useState<OutputLine[]>([])
+
+  trpc.onLineGeneration.useSubscription({
+    gameId: gameId,
+    gameTurn: currTurn
+  }, {
+    onData: (line) => {
+      setLines((prev)=>[...prev, line.data])
+      addLines(gameId, currTurn, [{
+          scoreUnit: line.data.scoreUnit,
+          scoreValue: line.data.scoreValue?line.data.scoreValue/100:null,
+          positions: [...line.data.positions],
+      }])
+    },
+  });
 
   React.useEffect(() => {
     if (data && data.length > 0) {
       const lines: Line[] = data.map((line) => {
         return {
           scoreUnit: line.scoreUnit,
-          scoreValue: line.scoreValue,
+          scoreValue: line.scoreValue?line.scoreValue/100:null,
           positions: [...line.positions],
         };
       });
       addLines(gameId, currTurn, lines);
+      setLines([...data])
     }
   }, [data, setLineTurn, gameId, addLines, currTurn]);
 
@@ -387,7 +413,7 @@ function LinesHistory({ gameId }: LinesHistoryProps) {
 
   return (
     <div className="mx-4 mt-2 border-2 text-lg grow overflow-y-scroll grid grid-cols-3">
-      {data?.map((line, lineInd) => {
+      {lines.map((line, lineInd) => {
         return (
           <React.Fragment key={`line-${line.line}`}>
             <span className="px-1 text-lg text-center">{0}.</span>
@@ -398,7 +424,7 @@ function LinesHistory({ gameId }: LinesHistoryProps) {
               )}
               onClick={() => setLineTurn(gameId, lineInd, 0)}
             >
-              Line {line.line} - {line.scoreValue}
+              Line {line.line} : {line.scoreValue?line.scoreValue/100:null}
               {line.scoreUnit === "mate" && "M"}
             </button>
             {line.positions.slice(1).map((pos, ind) => {

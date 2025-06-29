@@ -518,8 +518,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
       game.currLine = 0;
       game.currLineTurn = 0;
-      game.positions[gameTurn].lines = [...lines];
-      game.positions[gameTurn].lines.forEach((line) =>
+      const t  = [...lines];
+      t.forEach((line) =>
         line.positions.forEach((pos) => {
           if (!pos.scoreUnit || !pos.scoreValue) {
             pos.scorePercent = 50;
@@ -535,6 +535,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
           pos.scorePercent = parseFloat((50 - capped / 20).toFixed(2));
         })
       );
+
+      game.positions[gameTurn].lines = [...game.positions[gameTurn].lines, ...t ]
 
       return {
         games: [...prev.games],

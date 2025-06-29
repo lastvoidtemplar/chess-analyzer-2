@@ -2,7 +2,7 @@ import express from "express";
 import * as trpcExpress from "@trpc/server/adapters/express";
 import { applyWSSHandler } from "@trpc/server/adapters/ws";
 import { appRouter } from "@repo/trpc";
-import { createContext } from "./context";
+import { createContext, ee } from "./context";
 import { getRequestListener, createAdaptorServer } from "@hono/node-server";
 import { createIssuer } from "@repo/auth";
 import {
@@ -68,4 +68,4 @@ process.on("SIGTERM", () => {
   wss.close();
 });
 
-listenResponseQueue(db, valkeyBloacking);
+listenResponseQueue(db, valkeyBloacking, ee);

@@ -8,6 +8,7 @@ import {
 } from "@repo/db";
 import { Chess } from "chess.js";
 import Valkey from "iovalkey";
+import  EventEmitter  from "events";
 
 type FensMessage = {
   type: "fens";
@@ -60,7 +61,22 @@ type Messeage = FensMessage | ScoresMessage | LinesMessage;
 
 const responseQueue = "responses";
 
-export async function listenResponseQueue(db: DB, valkey: Valkey) {
+type OutputLine = {
+  gameId: string;
+  gameTurn: number;
+  line: number;
+  scoreUnit: "cp" | "mate" | null;
+  scoreValue: number | null;
+  positions: {
+    san: string | null;
+    lan: string | null;
+    fen: string;
+    scoreUnit: "cp" | "mate" | null;
+    scoreValue: number | null;
+  }[];
+};
+
+export async function listenResponseQueue(db: DB, valkey: Valkey, ee: EventEmitter) {
   while (true) {
     try {
       const result = await valkey.blpop(responseQueue, 0);
@@ -81,7 +97,7 @@ export async function listenResponseQueue(db: DB, valkey: Valkey) {
             await handleScoresMessage(db, parsed.state, parsed.payload);
             break;
           case "lines":
-            await handleLinesMessage(db, parsed.state, parsed.payload);
+            await handleLinesMessage(db, parsed.state, parsed.payload,ee);
             break;
         }
       }
@@ -123,7 +139,8 @@ async function handleScoresMessage(
 async function handleLinesMessage(
   db: DB,
   state: LinesMessage["state"],
-  payload: LinesMessage["payload"]
+  payload: LinesMessage["payload"],
+  ee: EventEmitter
 ) {
   const gameId = state.gameId;
   const gameTurn = state.gameTurn;
@@ -177,6 +194,23 @@ async function handleLinesMessage(
       };
     });
     createLine(db, gameId, gameTurn, line, lineScore, linePositions);
+    const proj:OutputLine = {
+      gameId,
+      gameTurn,
+      line,
+      scoreUnit: lineScore.unit,
+      scoreValue: lineScore.score,
+      positions: linePositions.map(pos=>{
+        return {
+          san: pos.san??null,
+          lan: pos.lan??null,
+          fen: pos.fen,
+          scoreUnit: pos.scoreUnit,
+          scoreValue: pos.scoreValue
+        }
+      })
+    }
+    ee.emit(`line-${gameId}-${gameTurn}`, proj)
   } catch (err) {
     console.error(err);
   }

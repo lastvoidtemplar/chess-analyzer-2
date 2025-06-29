@@ -1,7 +1,7 @@
 import { useParams } from "react-router-dom";
 import { trpc } from "../hooks/trpc";
 import BoardWithPlayers from "./BoardWithPlayers";
-import { useGameStore } from "../hooks/store";
+import { useGameStore, type GamePosition } from "../hooks/store";
 import React from "react";
 import AnalyzePanel from "./AnanyzePanel";
 
@@ -14,7 +14,14 @@ function Analyze() {
 
   React.useEffect(() => {
     if (gameId && data&& data.status==="ready") {
-      setGame(gameId, data.name,data.white, data.black, data.whiteElo, data.blackElo ,data.positions);
+      const positions:GamePosition[] = [...data.positions].map(pos=>{
+        return {
+          ...pos,
+          lines: []
+        }
+      })
+
+      setGame(gameId, data.name,data.white, data.black, data.whiteElo, data.blackElo ,positions);
     }
     if (gameId && data && data.status==="generating"){
       addGame(gameId, data.name, data.white, data.black, data.whiteElo, data.blackElo)

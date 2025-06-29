@@ -35,6 +35,7 @@ export interface Context {
   db: DB;
   valkey: Valkey;
   subject?: Subject;
+  ee: EventEmitter;
 }
 
 const t = initTRPC.context<Context>().create({
@@ -52,15 +53,27 @@ const protectedProcedure = t.procedure.use(({ input, ctx, next }) => {
   });
 });
 
-const ee = new EventEmitter();
-ee.setMaxListeners(0);
-
 type ChatMessage = {
   id: string;
   username: string;
   userPicture: string;
   message: string;
   timestamp: number;
+};
+
+type OutputLine = {
+  gameId: string;
+  gameTurn: number;
+  line: number;
+  scoreUnit: "cp" | "mate" | null;
+  scoreValue: number | null;
+  positions: {
+    san: string | null;
+    lan: string | null;
+    fen: string;
+    scoreUnit: "cp" | "mate" | null;
+    scoreValue: number | null;
+  }[];
 };
 
 export const appRouter = t.router({
@@ -408,11 +421,14 @@ export const appRouter = t.router({
         timestamp: chatMessage.timestamp,
       });
 
-      ee.emit("message", chatMessage);
+      ctx.ee.emit("message", chatMessage);
     }),
 
-  onChatMessage: protectedProcedure.subscription(async function* ({ signal }) {
-    for await (const [msg] of on(ee, "message", {
+  onChatMessage: protectedProcedure.subscription(async function* ({
+    ctx,
+    signal,
+  }) {
+    for await (const [msg] of on(ctx.ee, "message", {
       signal,
     }) as AsyncIterable<ChatMessage[]>) {
       console.log(msg);
@@ -481,20 +497,7 @@ export const appRouter = t.router({
       }
 
       const result = await getLines(ctx.db, input.gameId, input.gameTurn);
-      const lines: {
-        gameId: string;
-        gameTurn: number;
-        line: number;
-        scoreUnit: "cp" | "mate" | null;
-        scoreValue: number | null;
-        positions: {
-          san: string | null;
-          lan: string | null;
-          fen: string;
-          scoreUnit: "cp" | "mate" | null;
-          scoreValue: number | null;
-        }[];
-      }[] = [];
+      const lines: OutputLine[] = [];
       for (const el of result) {
         let lineInd = lines.findIndex((l) => l.line === el.lines.line);
         if (lineInd === -1) {
@@ -514,10 +517,43 @@ export const appRouter = t.router({
           lan: el.lines_positiions.lan,
           fen: el.lines_positiions.fen,
           scoreUnit: el.lines_positiions.scoreUnit as "cp" | "mate" | null,
-          scoreValue: el.lines_positiions.scoreValue
-        })
+          scoreValue: el.lines_positiions.scoreValue,
+        });
       }
-      return lines
+      return lines;
+    }),
+  onLineGeneration: protectedProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+        gameTurn: z.number(),
+      })
+    )
+    .subscription(async function* ({ ctx, input, signal }) {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const game = await getGame(ctx.db, input.gameId);
+      if (!game) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (game.userId !== ctx.subject.properties.userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+
+      for await (const [line] of on(
+        ctx.ee,
+        `line-${input.gameId}-${input.gameTurn}`,
+        {
+          signal,
+        }
+      ) as AsyncIterable<OutputLine[]>) {
+        yield tracked(`line-${input.gameId}-${input.gameTurn}`, line);
+      }
+      console.log("ended");
     }),
 });
 
