@@ -36,7 +36,7 @@ CREATE TABLE `lines` (
 	`score_unit` text,
 	`score_value` integer,
 	PRIMARY KEY(`game_id`, `game_turn`, `line`),
-	FOREIGN KEY (`game_id`,`game_turn`) REFERENCES `game_positions`(`game_id`,`turn`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`game_id`,`game_turn`) REFERENCES `game_positions`(`game_id`,`turn`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `lines_positiions` (
@@ -50,7 +50,7 @@ CREATE TABLE `lines_positiions` (
 	`score_unit` text NOT NULL,
 	`score_value` integer NOT NULL,
 	PRIMARY KEY(`game_id`, `game_turn`, `line`, `line_turn`),
-	FOREIGN KEY (`game_id`,`game_turn`,`line`) REFERENCES `lines`(`game_id`,`game_turn`,`line`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`game_id`,`game_turn`,`line`) REFERENCES `lines`(`game_id`,`game_turn`,`line`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `messages` (

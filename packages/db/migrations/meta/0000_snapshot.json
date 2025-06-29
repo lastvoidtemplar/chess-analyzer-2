@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a2b26ad1-19e8-454f-a622-0522a4ea05a1",
+  "id": "1dd7cec3-5d35-449a-beb8-ecb14117ae71",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "game_headers": {
@@ -267,7 +267,7 @@
             "game_id",
             "turn"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -367,7 +367,7 @@
             "game_turn",
             "line"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

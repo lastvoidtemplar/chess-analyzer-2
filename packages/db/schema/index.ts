@@ -79,7 +79,7 @@ export const lines = sqliteTable(
     foreignKey({
       columns: [table.gameId, table.gameTurn],
       foreignColumns: [gamePositions.gameId, gamePositions.turn],
-    }),
+    }).onDelete("cascade"),
   ]
 );
 
@@ -103,7 +103,7 @@ export const linesPositions = sqliteTable(
     foreignKey({
       columns: [table.gameId, table.gameTurn, table.line],
       foreignColumns: [lines.gameId, lines.gameTurn, lines.line],
-  }),
+    }).onDelete("cascade"),
   ]
 );
 
