@@ -1,5 +1,5 @@
 import React from "react";
-import { useGameStore, type Position } from "../hooks/store";
+import { useGameStore, type GamePosition, type Line } from "../hooks/store";
 import {
   ArrowLeft,
   ArrowLeftToLine,
@@ -23,7 +23,7 @@ type AnalyzePanelProps = {
 function AnalyzePanel({ gameId }: AnalyzePanelProps) {
   const [panel, setPanel] = React.useState<"positions" | "lines">("positions");
   const { getPositions } = useGameStore();
-  const [positions, setPosition] = React.useState<Position[]>([]);
+  const [positions, setPosition] = React.useState<GamePosition[]>([]);
 
   React.useEffect(() => {
     setPosition(getPositions(gameId));
@@ -142,7 +142,7 @@ function PositionNoteMenu({ gameId }: PositionNoteMenuProps) {
 
 type GameHistoryProps = {
   gameId: string;
-  positions: Position[];
+  positions: GamePosition[];
 };
 
 function GameHistory({ gameId, positions }: GameHistoryProps) {
@@ -336,9 +336,88 @@ type LinesHistoryProps = {
 };
 
 function LinesHistory({ gameId }: LinesHistoryProps) {
+  const currTurn = useGameStore((state) => state.getCurrTurn(gameId));
+  const currLine = useGameStore((state) => state.getCurrLine(gameId));
+  const currLineTurn = useGameStore((state) => state.getCurrLineTurn(gameId));
+  const { setLineTurn, addLines } = useGameStore();
+  const { isLoading, data, error } = trpc.getLines.useQuery({
+    gameId: gameId,
+    gameTurn: currTurn,
+  });
+
+  React.useEffect(() => {
+    if (data && data.length > 0) {
+      const lines: Line[] = data.map((line) => {
+        return {
+          scoreUnit: line.scoreUnit,
+          scoreValue: line.scoreValue,
+          positions: [...line.positions],
+        };
+      });
+      addLines(gameId, currTurn, lines);
+    }
+  }, [data, setLineTurn, gameId, addLines, currTurn]);
+
+  if (isLoading) {
+    return (
+      <div className="mx-4 mt-2 border-2 text-lg grow overflow-y-scroll">
+        Loading...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mx-4 mt-2 border-2 text-lg grow overflow-y-scroll">
+        {error.message}
+      </div>
+    );
+  }
+
   return (
     <div className="mx-4 mt-2 border-2 text-lg grow overflow-y-scroll grid grid-cols-3">
-      {gameId}
+      {data?.map((line, lineInd) => {
+        return (
+          <React.Fragment key={`line-${line.line}`}>
+            <span className="px-1 text-lg text-center">{0}.</span>
+            <button
+              className={clsx(
+                "col-span-2 px-1 text-lg text-center",
+                currLine === lineInd && currLineTurn === 0 ? "border-1" : ""
+              )}
+              onClick={() => setLineTurn(gameId, lineInd, 0)}
+            >
+              Line {line.line}
+            </button>
+            {line.positions.slice(1).map((pos, ind) => {
+              return (
+                <React.Fragment key={`pos-${ind}`}>
+                  {ind % 2 == 0 && (
+                    <span className="px-1 text-lg text-center">
+                      {ind / 2 + 1}.
+                    </span>
+                  )}
+                  <button
+                    className={clsx(
+                      "px-1 text-lg text-center",
+                      currLine === lineInd && currLineTurn === ind+1
+                        ? "border-1"
+                        : ""
+                    )}
+                    onClick={() => setLineTurn(gameId, lineInd, ind + 1)}
+                  >
+                    {pos.san}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+            {line.positions.length % 2 == 0 && (
+              <span className="px-1 text-lg text-center"></span>
+            )}
+            <hr className="col-span-3 ml-4" />
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }

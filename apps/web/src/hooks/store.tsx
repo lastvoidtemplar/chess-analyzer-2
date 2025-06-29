@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type Position = {
+export type LinePosition = {
   san: string | null;
   lan: string | null;
   fen: string | null;
@@ -9,13 +9,31 @@ export type Position = {
   scorePercent?: number;
 };
 
+export type Line = {
+  scoreUnit: "cp" | "mate" | null;
+  scoreValue: number | null;
+  positions: LinePosition[];
+};
+
+export type GamePosition = {
+  san: string | null;
+  lan: string | null;
+  fen: string | null;
+  scoreUnit: "cp" | "mate" | null;
+  scoreValue: number | null;
+  scorePercent?: number;
+  lines: Line[];
+};
+
 type GameState =
   | {
       status: "loaded";
       gameId: string;
       name: string;
       currTurn: number;
-      positions: Position[];
+      currLine: number;
+      currLineTurn: number;
+      positions: GamePosition[];
       white: string;
       black: string;
       whiteElo: number;
@@ -48,17 +66,20 @@ type GameStore = {
     black: string,
     whiteElo: number,
     blackElo: number,
-    positions: Position[]
+    positions: GamePosition[]
   ) => void;
   updateName: (gameId: string, name: string) => void;
   removeGame: (gameId: string) => void;
-  getPositions: (gameId: string) => Position[];
+  getPositions: (gameId: string) => GamePosition[];
   getCurrTurn: (gameId: string) => number;
   firstTurn: (gameId: string) => void;
   pervTurn: (gameId: string) => void;
   nextTurn: (gameId: string) => void;
   lastTurn: (gameId: string) => void;
   setTurn: (gameId: string, turn: number) => void;
+  getCurrLine: (gameId: string) => number;
+  getCurrLineTurn: (gameId: string) => number;
+  setLineTurn: (gameId: string, line: number, lineTurn: number) => void;
   getCurrPosition: (gameId: string) => string;
   getCurrScoreUnit: (gameId: string) => "cp" | "mate" | null;
   getCurrScoreValue: (gameId: string) => number | null;
@@ -66,8 +87,9 @@ type GameStore = {
   getWhite: (gameId: string) => string;
   getBlack: (gameId: string) => string;
   getWhiteElo: (gameId: string) => number;
-  getBlackElo: (gameId: string) => number; 
-  getPositionsScores: (gameId:string)=>{turn:number, percent: number}[]
+  getBlackElo: (gameId: string) => number;
+  getPositionsScores: (gameId: string) => { turn: number; percent: number }[];
+  addLines: (gameId: string, gameTurn: number, lines: Line[]) => void;
 };
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -109,21 +131,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     black: string,
     whiteElo: number,
     blackElo: number,
-    positions: Position[]
+    positions: GamePosition[]
   ) => {
     for (const position of positions) {
       if (!position.scoreUnit || !position.scoreValue) {
         position.scorePercent = 50;
-        continue
+        position.lines = [];
+        continue;
       }
 
       if (position.scoreUnit === "mate") {
         position.scorePercent = position.scoreValue > 0 ? 100 : 0;
-        continue
+        continue;
       }
 
       const capped = Math.max(-1000, Math.min(1000, position.scoreValue));
-      position.scorePercent =  parseFloat((50 - capped / 20).toFixed(2));
+      position.scorePercent = parseFloat((50 - capped / 20).toFixed(2));
     }
 
     set((prev) => {
@@ -137,6 +160,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
               gameId: gameId,
               name: name,
               currTurn: 0,
+              currLine: -1,
+              currLineTurn: -1,
               positions: positions,
               white,
               black,
@@ -157,6 +182,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
           gameId: gameId,
           name: game.name,
           currTurn: 0,
+          currLine: -1,
+          currLineTurn: -1,
           positions: positions,
           white,
           black,
@@ -269,6 +296,42 @@ export const useGameStore = create<GameStore>((set, get) => ({
       };
     });
   },
+  getCurrLine: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game || game.status === "loading") {
+      return -1;
+    }
+    return game.currLine;
+  },
+  getCurrLineTurn: (gameId: string) => {
+    const game = get().games.find((curr) => curr.gameId === gameId);
+    if (!game || game.status === "loading") {
+      return -1;
+    }
+    return game.currLineTurn;
+  },
+  setLineTurn: (gameId: string, line: number, lineTurn: number) => {
+    set((prev) => {
+      const game = prev.games.find((curr) => curr.gameId === gameId);
+      if (
+        !game ||
+        game.status === "loading" ||
+        line < -1 ||
+        lineTurn < -1||
+        game.positions[game.currTurn].lines.length <= line ||
+        game.positions[game.currTurn].lines[line].positions.length <= lineTurn
+      ) {
+        return prev;
+      }
+
+      
+      game.currLine = line;
+      game.currLineTurn = lineTurn;
+      return {
+        games: [...prev.games],
+      };
+    });
+  },
   getCurrPosition: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game || game.status === "loading") {
@@ -289,8 +352,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return null;
     }
     return game.positions[game.currTurn].scoreValue;
-  }, 
-   getCurrScorePercent: (gameId: string) => {
+  },
+  getCurrScorePercent: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game || game.status === "loading") {
       return 50;
@@ -325,18 +388,32 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
     return game.blackElo;
   },
-  getPositionsScores: (gameId:string)=>{
+  getPositionsScores: (gameId: string) => {
     const game = get().games.find((curr) => curr.gameId === gameId);
     if (!game || game.status === "loading") {
       return [];
     }
-    const res = game.positions.map((pos, turn)=>{
+    const res = game.positions.map((pos, turn) => {
       return {
         turn: turn,
-        percent: pos.scorePercent ?? 50
-      }
-    })
+        percent: pos.scorePercent ?? 50,
+      };
+    });
 
-    return res
-  }
+    return res;
+  },
+  addLines: (gameId: string, gameTurn: number, lines: Line[]) => {
+    set((prev) => {
+      const game = prev.games.find((curr) => curr.gameId === gameId);
+      if (!game || game.status === "loading") {
+        return prev;
+      }
+      game.currLine = 0;
+      game.currLineTurn = 0;
+      game.positions[gameTurn].lines = [...lines];
+      return {
+        games: [...prev.games],
+      };
+    });
+  },
 }));

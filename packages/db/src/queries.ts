@@ -398,14 +398,32 @@ export function createLine(
   positions: (typeof linesPositions.$inferInsert)[]
 ) {
   db.transaction((tx) => {
-    tx.insert(lines).values({
-      gameId: gameId,
-      gameTurn: gameTurn,
-      line: line,
-      scoreUnit: score.unit,
-      scoreValue: score.score,
-    }).run();
+    tx.insert(lines)
+      .values({
+        gameId: gameId,
+        gameTurn: gameTurn,
+        line: line,
+        scoreUnit: score.unit,
+        scoreValue: score.score,
+      })
+      .run();
 
-    tx.insert(linesPositions).values(positions).run()
+    tx.insert(linesPositions).values(positions).run();
   });
+}
+
+export async function getLines(db: DB, gameId: string, gameTurn: number) {
+  const result = await db
+    .select()
+    .from(lines)
+    .innerJoin(
+      linesPositions,
+      and(
+        eq(lines.gameId, linesPositions.gameId),
+        eq(lines.gameTurn, linesPositions.gameTurn),
+        eq(lines.line, linesPositions.line)
+      )
+    )
+    .where(and(eq(lines.gameId, gameId), eq(lines.gameTurn, gameTurn)));
+  return result;
 }

@@ -21,6 +21,7 @@ import {
   lineGenerated,
   getPositionFen,
   markLinesGenerated,
+  getLines,
 } from "@repo/db";
 import { Subject } from "@repo/auth";
 import SuperJSON from "superjson";
@@ -452,11 +453,71 @@ export const appRouter = t.router({
       const fen = await getPositionFen(ctx.db, input.gameId, input.turn);
 
       if (!fen) {
-        console.error("Fen is null", input.gameId, input.turn)
-        return
+        console.error("Fen is null", input.gameId, input.turn);
+        return;
       }
 
       await publishLinesTask(ctx.valkey, input.gameId, input.turn, fen);
+    }),
+  getLines: protectedProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+        gameTurn: z.number(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const game = await getGame(ctx.db, input.gameId);
+      if (!game) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (game.userId !== ctx.subject.properties.userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const result = await getLines(ctx.db, input.gameId, input.gameTurn);
+      const lines: {
+        gameId: string;
+        gameTurn: number;
+        line: number;
+        scoreUnit: "cp" | "mate" | null;
+        scoreValue: number | null;
+        positions: {
+          san: string | null;
+          lan: string | null;
+          fen: string;
+          scoreUnit: "cp" | "mate" | null;
+          scoreValue: number | null;
+        }[];
+      }[] = [];
+      for (const el of result) {
+        let lineInd = lines.findIndex((l) => l.line === el.lines.line);
+        if (lineInd === -1) {
+          lineInd = lines.length;
+          lines.push({
+            gameId: el.lines.gameId,
+            gameTurn: el.lines.gameTurn,
+            line: el.lines.line,
+            scoreUnit: el.lines.scoreUnit as "cp" | "mate" | null,
+            scoreValue: el.lines.scoreValue,
+            positions: [],
+          });
+        }
+        const line = lines[lineInd];
+        line.positions.push({
+          san: el.lines_positiions.san,
+          lan: el.lines_positiions.lan,
+          fen: el.lines_positiions.fen,
+          scoreUnit: el.lines_positiions.scoreUnit as "cp" | "mate" | null,
+          scoreValue: el.lines_positiions.scoreValue
+        })
+      }
+      return lines
     }),
 });
 
