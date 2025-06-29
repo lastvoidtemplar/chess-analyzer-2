@@ -22,26 +22,6 @@ type AnalyzePanelProps = {
 
 function AnalyzePanel({ gameId }: AnalyzePanelProps) {
   const [panel, setPanel] = React.useState<"positions" | "lines">("positions");
-  return (
-    <div className="border-2 w-lg h-11/12 flex flex-col">
-      {panel === "positions" ? (
-        <PositionsAnalyzePanel gameId={gameId} setPanel={setPanel} />
-      ) : (
-        <LinesAnalyzePanel gameId={gameId} setPanel={setPanel} />
-      )}
-    </div>
-  );
-}
-
-type PositionsAnalyzePanelProps = {
-  gameId: string;
-  setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
-};
-
-function PositionsAnalyzePanel({
-  gameId,
-  setPanel,
-}: PositionsAnalyzePanelProps) {
   const { getPositions } = useGameStore();
   const [positions, setPosition] = React.useState<Position[]>([]);
 
@@ -50,30 +30,66 @@ function PositionsAnalyzePanel({
   }, [gameId, getPositions]);
 
   return (
-    <React.Fragment>
+    <div className="border-2 w-lg h-11/12 flex flex-col">
       <PositionNoteMenu gameId={gameId} />
       <hr className="mx-4" />
-      <GameHistory gameId={gameId} positions={positions} />
-      <ReviewControlPanel gameId={gameId} setPanel={setPanel} />
-    </React.Fragment>
+      {panel === "positions" ? (
+        <React.Fragment>
+          <GameHistory gameId={gameId} positions={positions} />
+          <ScoresChart gameId={gameId} />
+          <ReviewControlPanel gameId={gameId} setPanel={setPanel} />
+        </React.Fragment>
+      ) : (
+        <React.Fragment>
+          <LinesHistory gameId={gameId} />
+          <LinesControlPanel gameId={gameId} setPanel={setPanel} />
+        </React.Fragment>
+      )}
+    </div>
   );
 }
 
-type LinesAnalyzePanelProps = {
-  gameId: string;
-  setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
-};
+// type PositionsAnalyzePanelProps = {
+//   gameId: string;
+//   setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
+// };
 
-function LinesAnalyzePanel({ gameId, setPanel }: LinesAnalyzePanelProps) {
-  return (
-    <React.Fragment>
-      <PositionNoteMenu gameId={gameId} />
-      <hr className="mx-4" />
-      <LinesHistory gameId={gameId} />
-      <LinesControlPanel gameId={gameId} setPanel={setPanel} />
-    </React.Fragment>
-  );
-}
+// function PositionsAnalyzePanel({
+//   gameId,
+//   setPanel,
+// }: PositionsAnalyzePanelProps) {
+//   const { getPositions } = useGameStore();
+//   const [positions, setPosition] = React.useState<Position[]>([]);
+
+//   React.useEffect(() => {
+//     setPosition(getPositions(gameId));
+//   }, [gameId, getPositions]);
+
+//   return (
+//     <React.Fragment>
+//       <PositionNoteMenu gameId={gameId} />
+//       <hr className="mx-4" />
+//       <GameHistory gameId={gameId} positions={positions} />
+//       <ReviewControlPanel gameId={gameId} setPanel={setPanel} />
+//     </React.Fragment>
+//   );
+// }
+
+// type LinesAnalyzePanelProps = {
+//   gameId: string;
+//   setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
+// };
+
+// function LinesAnalyzePanel({ gameId, setPanel }: LinesAnalyzePanelProps) {
+//   return (
+//     <React.Fragment>
+//       <PositionNoteMenu gameId={gameId} />
+//       <hr className="mx-4" />
+//       <LinesHistory gameId={gameId} />
+//       <LinesControlPanel gameId={gameId} setPanel={setPanel} />
+//     </React.Fragment>
+//   );
+// }
 
 type PositionNoteMenuProps = {
   gameId: string;
@@ -198,7 +214,6 @@ function ReviewControlPanel({ gameId, setPanel }: ReviewControlPanelProps) {
 
   return (
     <div className="mx-4 flex flex-col items-center">
-      <ScoresChart gameId={gameId} />
       <div className="flex justify-evenly w-full my-2">
         <button className="border-2 px-4" onClick={() => firstTurn(gameId)}>
           <ArrowLeftToLine color="black" size={ButtonSize} />
@@ -229,7 +244,7 @@ type LinesControlPanelProps = {
   setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
 };
 
-function LinesControlPanel({setPanel}:LinesControlPanelProps) {
+function LinesControlPanel({ setPanel }: LinesControlPanelProps) {
   return (
     <div className="mx-4 flex-col items-center">
       <div className="flex justify-evenly w-full my-2">
@@ -263,7 +278,7 @@ type ScoreChartType = {
   gameId: string;
 };
 
-function ScoresChart({ gameId }: ScoreChartType) {
+const ScoresChart = React.memo(({ gameId }: ScoreChartType) => {
   const { getPositionsScores, setTurn } = useGameStore();
   const [data, setData] = React.useState<ReturnType<typeof getPositionsScores>>(
     []
@@ -283,42 +298,44 @@ function ScoresChart({ gameId }: ScoreChartType) {
   );
 
   return (
-    <div className="w-full h-28 border-2 no-focus-outline">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart
-          data={data}
-          margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-          onClick={onClick}
-        >
-          <Area
-            type="monotone"
-            dataKey={() => 100}
-            stroke="none"
-            fill="#222222"
-            fillOpacity={0.95}
-            isAnimationActive={false}
-          />
+    <div className="mx-4 flex flex-col items-center">
+      <div className="w-full h-28 border-2 no-focus-outline">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={data}
+            margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+            onClick={onClick}
+          >
+            <Area
+              type="monotone"
+              dataKey={() => 100}
+              stroke="none"
+              fill="#222222"
+              fillOpacity={0.95}
+              isAnimationActive={false}
+            />
 
-          <Area
-            type="monotone"
-            dataKey="percent"
-            stroke="#000000"
-            fill="#eeeeee"
-            fillOpacity={0.95}
-            strokeWidth={2}
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+            <Area
+              type="monotone"
+              dataKey="percent"
+              stroke="#000000"
+              fill="#eeeeee"
+              fillOpacity={0.95}
+              strokeWidth={2}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
-}
+});
 
 type LinesHistoryProps = {
-  gameId: string
-}
+  gameId: string;
+};
 
-function LinesHistory({gameId}: LinesHistoryProps) {
+function LinesHistory({ gameId }: LinesHistoryProps) {
   return (
     <div className="mx-4 mt-2 border-2 text-lg grow overflow-y-scroll grid grid-cols-3">
       {gameId}
