@@ -5,6 +5,8 @@ import {
   ArrowLeftToLine,
   ArrowRight,
   ArrowRightToLine,
+  TextSearch,
+  View,
 } from "lucide-react";
 import clsx from "clsx";
 import Form from "./Form";
@@ -19,14 +21,27 @@ type AnalyzePanelProps = {
 };
 
 function AnalyzePanel({ gameId }: AnalyzePanelProps) {
+  const [panel, setPanel] = React.useState<"positions" | "lines">("positions");
   return (
     <div className="border-2 w-lg h-11/12 flex flex-col">
-      <PositionsAnalyzePanel gameId={gameId} />
+      {panel === "positions" ? (
+        <PositionsAnalyzePanel gameId={gameId} setPanel={setPanel} />
+      ) : (
+        <LinesAnalyzePanel gameId={gameId} setPanel={setPanel} />
+      )}
     </div>
   );
 }
 
-function PositionsAnalyzePanel({ gameId }: AnalyzePanelProps) {
+type PositionsAnalyzePanelProps = {
+  gameId: string;
+  setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
+};
+
+function PositionsAnalyzePanel({
+  gameId,
+  setPanel,
+}: PositionsAnalyzePanelProps) {
   const { getPositions } = useGameStore();
   const [positions, setPosition] = React.useState<Position[]>([]);
 
@@ -39,7 +54,23 @@ function PositionsAnalyzePanel({ gameId }: AnalyzePanelProps) {
       <PositionNoteMenu gameId={gameId} />
       <hr className="mx-4" />
       <GameHistory gameId={gameId} positions={positions} />
-      <ReviewControlPanel gameId={gameId} />
+      <ReviewControlPanel gameId={gameId} setPanel={setPanel} />
+    </React.Fragment>
+  );
+}
+
+type LinesAnalyzePanelProps = {
+  gameId: string;
+  setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
+};
+
+function LinesAnalyzePanel({ gameId, setPanel }: LinesAnalyzePanelProps) {
+  return (
+    <React.Fragment>
+      <PositionNoteMenu gameId={gameId} />
+      <hr className="mx-4" />
+      <LinesHistory gameId={gameId} />
+      <LinesControlPanel gameId={gameId} setPanel={setPanel} />
     </React.Fragment>
   );
 }
@@ -73,7 +104,7 @@ function PositionNoteMenu({ gameId }: PositionNoteMenuProps) {
   );
 
   return (
-    <div className="mx-4 my-4">
+    <div className="mx-4 my-2">
       <Form className="flex flex-col gap-2" onSubmit={onSubmit}>
         <TextArea
           rows={5}
@@ -114,7 +145,7 @@ function GameHistory({ gameId, positions }: GameHistoryProps) {
   }, [positions]);
 
   return (
-    <div className="m-4 border-2 text-lg grow overflow-y-scroll grid grid-cols-3">
+    <div className="m-4 my-2 border-2 text-lg grow overflow-y-scroll grid grid-cols-3">
       <span className="px-1 text-lg text-center">{0}.</span>
       <span
         className={clsx(
@@ -156,17 +187,17 @@ function GameHistory({ gameId, positions }: GameHistoryProps) {
   );
 }
 
-type ReviewControlPanelType = {
+type ReviewControlPanelProps = {
   gameId: string;
+  setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
 };
 
 const ButtonSize: number = 56;
-function ReviewControlPanel({ gameId }: ReviewControlPanelType) {
+function ReviewControlPanel({ gameId, setPanel }: ReviewControlPanelProps) {
   const { firstTurn, pervTurn, nextTurn, lastTurn } = useGameStore();
 
   return (
-    <div className="mx-4 mb-2 flex flex-col items-center">
-      {/* <img src={Graph} className="h-28 mb-2" /> */}
+    <div className="mx-4 flex flex-col items-center">
       <ScoresChart gameId={gameId} />
       <div className="flex justify-evenly w-full my-2">
         <button className="border-2 px-4" onClick={() => firstTurn(gameId)}>
@@ -175,10 +206,52 @@ function ReviewControlPanel({ gameId }: ReviewControlPanelType) {
         <button className="border-2 px-4" onClick={() => pervTurn(gameId)}>
           <ArrowLeft color="black" size={ButtonSize} />
         </button>
+        <button className="border-2 px-4">
+          <TextSearch
+            color="black"
+            size={ButtonSize}
+            onClick={() => setPanel("lines")}
+          />
+        </button>
         <button className="border-2 px-4" onClick={() => nextTurn(gameId)}>
           <ArrowRight color="black" size={ButtonSize} />
         </button>
         <button className="border-2 px-4" onClick={() => lastTurn(gameId)}>
+          <ArrowRightToLine color="black" size={ButtonSize} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type LinesControlPanelProps = {
+  gameId: string;
+  setPanel: React.Dispatch<React.SetStateAction<"positions" | "lines">>;
+};
+
+function LinesControlPanel({setPanel}:LinesControlPanelProps) {
+  return (
+    <div className="mx-4 flex-col items-center">
+      <div className="flex justify-evenly w-full my-2">
+        <button className="border-2 px-4">
+          <ArrowLeftToLine color="black" size={ButtonSize} />
+        </button>
+        <button className="border-2 px-4">
+          <ArrowLeft color="black" size={ButtonSize} />
+        </button>
+
+        <button className="border-2 px-4">
+          <View
+            color="black"
+            size={ButtonSize}
+            onClick={() => setPanel("positions")}
+          />
+        </button>
+
+        <button className="border-2 px-4">
+          <ArrowRight color="black" size={ButtonSize} />
+        </button>
+        <button className="border-2 px-4">
           <ArrowRightToLine color="black" size={ButtonSize} />
         </button>
       </div>
@@ -237,6 +310,18 @@ function ScoresChart({ gameId }: ScoreChartType) {
           />
         </AreaChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+type LinesHistoryProps = {
+  gameId: string
+}
+
+function LinesHistory({gameId}: LinesHistoryProps) {
+  return (
+    <div className="mx-4 mt-2 border-2 text-lg grow overflow-y-scroll grid grid-cols-3">
+      {gameId}
     </div>
   );
 }
