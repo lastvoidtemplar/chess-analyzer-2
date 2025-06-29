@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@repo/db": "workspace:",
+    "chess.js": "^1.4.0",
     "iovalkey": "^0.3.3"
   }
 }

@@ -6,7 +6,16 @@ import {
   InferSelectModel,
   not,
 } from "drizzle-orm";
-import { DB, gameHeaders, gamePositions, games, messages, users } from ".";
+import {
+  DB,
+  gameHeaders,
+  gamePositions,
+  games,
+  lines,
+  linesPositions,
+  messages,
+  users,
+} from ".";
 import { v4 as uuid } from "uuid";
 
 export async function checkIfUserExistById(db: DB, userId: string) {
@@ -246,8 +255,8 @@ export async function getPositions(db: DB, gameId: string) {
 }
 
 type Score = {
-  unit: "cp" | "mate";
-  score: number;
+  unit: "cp" | "mate" | null;
+  score: number | null;
 };
 
 export function createScores(db: DB, gameId: string, scores: Score[]) {
@@ -256,7 +265,7 @@ export function createScores(db: DB, gameId: string, scores: Score[]) {
     let minus = 1;
     for (const score of scores) {
       tx.update(gamePositions)
-        .set({ scoreUnit: score.unit, scoreValue: minus * score.score })
+        .set({ scoreUnit: score.unit, scoreValue: minus * (score.score ?? 0) })
         .where(
           and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn))
         )
@@ -265,6 +274,36 @@ export function createScores(db: DB, gameId: string, scores: Score[]) {
       minus *= -1;
     }
   });
+}
+
+export async function getPositionFen(db: DB, gameId: string, turn: number) {
+  const res = await db
+    .select({
+      fen: gamePositions.fen,
+    })
+    .from(gamePositions)
+    .where(and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn)))
+    .limit(1);
+
+  if (res.length === 0 || !res[0].fen) {
+    return null;
+  }
+  return res[0].fen;
+}
+export async function getPositionScore(db: DB, gameId: string, turn: number) {
+  const res = await db
+    .select({
+      scoreUnit: gamePositions.scoreUnit,
+      scoreValue: gamePositions.scoreValue,
+    })
+    .from(gamePositions)
+    .where(and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, turn)))
+    .limit(1);
+
+  if (res.length === 0 || !res[0]) {
+    return null;
+  }
+  return res[0];
 }
 
 export async function getPositionNote(db: DB, gameId: string, turn: number) {
@@ -313,4 +352,60 @@ export async function getMessages(db: DB, limit: number = 50) {
     .orderBy(desc(messages.timestamp))
     .limit(limit);
   return result;
+}
+
+export async function lineGenerated(db: DB, gameId: string, gameTurn: number) {
+  const result = await db
+    .select({
+      generated: gamePositions.linesGenerated,
+    })
+    .from(gamePositions)
+    .where(
+      and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, gameTurn))
+    );
+
+  if (result.length === 0) {
+    console.error("not existing game position", gameId, gameTurn);
+    return true;
+  }
+
+  return result[0].generated;
+}
+
+export async function markLinesGenerated(
+  db: DB,
+  gameId: string,
+  gameTurn: number
+) {
+  const result = await db
+    .update(gamePositions)
+    .set({
+      linesGenerated: true,
+    })
+    .where(
+      and(eq(gamePositions.gameId, gameId), eq(gamePositions.turn, gameTurn))
+    );
+
+  return result.lastInsertRowid;
+}
+
+export function createLine(
+  db: DB,
+  gameId: string,
+  gameTurn: number,
+  line: number,
+  score: Score,
+  positions: (typeof linesPositions.$inferInsert)[]
+) {
+  db.transaction((tx) => {
+    tx.insert(lines).values({
+      gameId: gameId,
+      gameTurn: gameTurn,
+      line: line,
+      scoreUnit: score.unit,
+      scoreValue: score.score,
+    }).run();
+
+    tx.insert(linesPositions).values(positions).run()
+  });
 }

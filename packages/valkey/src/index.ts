@@ -1,4 +1,12 @@
-import { createPositions, createScores, DB } from "@repo/db";
+import {
+  createLine,
+  createPositions,
+  createScores,
+  DB,
+  getPositionFen,
+  getPositionScore,
+} from "@repo/db";
+import { Chess } from "chess.js";
 import Valkey from "iovalkey";
 
 type FensMessage = {
@@ -12,7 +20,7 @@ type FensMessage = {
 };
 
 type Score = {
-  unit: "cp" | "mate";
+  unit: "cp" | "mate" ;
   score: number;
 };
 
@@ -26,7 +34,29 @@ type ScoresMessage = {
   };
 };
 
-type Messeage = FensMessage | ScoresMessage;
+type LinePosition = {
+  lan: string;
+  fen: string;
+  score: Score;
+};
+type Line = {
+  line: number;
+  score: Score;
+  positions: LinePosition[];
+};
+
+type LinesMessage = {
+  type: "lines";
+  state: {
+    gameId: string;
+    gameTurn: number;
+  };
+  payload: {
+    line: Line;
+  };
+};
+
+type Messeage = FensMessage | ScoresMessage | LinesMessage;
 
 const responseQueue = "responses";
 
@@ -41,10 +71,18 @@ export async function listenResponseQueue(db: DB, valkey: Valkey) {
         switch (parsed.type) {
           case "fens":
             await handleFensMessage(db, parsed.state, parsed.payload);
-            await publishScoresTask(valkey, parsed.state.gameId, parsed.payload.fens)
+            await publishScoresTask(
+              valkey,
+              parsed.state.gameId,
+              parsed.payload.fens
+            );
             break;
           case "scores":
-            await handleScoresMessage(db, parsed.state, parsed.payload)
+            await handleScoresMessage(db, parsed.state, parsed.payload);
+            break;
+          case "lines":
+            await handleLinesMessage(db, parsed.state, parsed.payload);
+            break;
         }
       }
     } catch (err) {
@@ -82,17 +120,83 @@ async function handleScoresMessage(
   }
 }
 
-const tasksQueue = "tasks"
-export async function publishScoresTask(valkey: Valkey,gameId: string ,fens: string[]) {
-    const message = {
-        type: "scores",
-        state: {
-            gameId: gameId
-        },
-        payload: {
-            fens: fens
-        }
-    }
+async function handleLinesMessage(
+  db: DB,
+  state: LinesMessage["state"],
+  payload: LinesMessage["payload"]
+) {
+  const gameId = state.gameId;
+  const gameTurn = state.gameTurn;
+  const line = payload.line.line;
+  const lineScore = payload.line.score;
+  const linePositions = payload.line.positions;
 
-    await valkey.lpush(tasksQueue, JSON.stringify(message))
+  try {
+    const fen = await getPositionFen(db, gameId, gameTurn);
+    const score = await getPositionScore(db, gameId, gameTurn);
+    if (!fen || !score) {
+      throw new Error(`Not found game position ${gameId}  ${gameTurn}`);
+    }
+    const chess = new Chess(fen);
+    const linePositions = [
+      {
+        lan: undefined,
+        fen: fen,
+        score: {
+          unit: score.scoreUnit,
+          score: score.scoreValue,
+        },
+      },
+      ...payload.line.positions,
+    ].map((pos, lineTurn) => {
+      if (pos.lan) {
+        const san = chess.move(pos.lan).san;
+        return {
+          gameId: gameId,
+          gameTurn: gameTurn,
+          line: line,
+          lineTurn: lineTurn,
+          san: san,
+          lan: pos.lan,
+          fen: pos.fen,
+          scoreUnit: pos.score.unit,
+          scoreValue: pos.score.score,
+        };
+      }
+
+      return {
+        gameId: gameId,
+        gameTurn: gameTurn,
+        line: line,
+        lineTurn: lineTurn,
+        san: undefined,
+        lan: undefined,
+        fen: pos.fen,
+        scoreUnit: pos.score.unit as "cp" | "mate",
+        scoreValue: pos.score.score ?? 0,
+      };
+    });
+    createLine(db, gameId, gameTurn, line, lineScore, linePositions);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+const tasksQueue = "tasks";
+export async function publishScoresTask(
+  valkey: Valkey,
+  gameId: string,
+  fens: string[]
+) {
+  const message = {
+    type: "scores",
+    state: {
+      gameId: gameId,
+    },
+    payload: {
+      fens: fens,
+    },
+  };
+
+  await valkey.lpush(tasksQueue, JSON.stringify(message));
 }

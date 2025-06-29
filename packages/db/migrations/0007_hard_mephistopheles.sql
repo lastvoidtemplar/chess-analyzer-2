@@ -1,0 +1,1 @@
+ALTER TABLE `game_positions` ADD `lines_generated` integer DEFAULT false;

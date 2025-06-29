@@ -18,12 +18,15 @@ import {
   updatePositionNote,
   saveMessage,
   getMessages,
+  lineGenerated,
+  getPositionFen,
+  markLinesGenerated,
 } from "@repo/db";
 import { Subject } from "@repo/auth";
 import SuperJSON from "superjson";
 import { parsePGN } from "./pgn";
 import Valkey from "iovalkey";
-import { publishFensTask } from "./valkey";
+import { publishFensTask, publishLinesTask } from "./valkey";
 import EventEmitter, { on } from "events";
 import { v4 as uuid } from "uuid";
 
@@ -368,17 +371,17 @@ export const appRouter = t.router({
 
       const messages = await getMessages(ctx.db, input.limit ?? 50);
 
-      const res:ChatMessage[] = messages.map(({messages,users})=>{
+      const res: ChatMessage[] = messages.map(({ messages, users }) => {
         return {
           id: messages.messageId,
           username: users.username,
           userPicture: users.picture,
           message: messages.message,
-          timestamp: messages.timestamp
-        }
-      })
+          timestamp: messages.timestamp,
+        };
+      });
 
-      return res
+      return res;
     }),
   sendChatMessage: protectedProcedure
     .input(z.object({ message: z.string() }))
@@ -416,6 +419,45 @@ export const appRouter = t.router({
       yield tracked(msg.id.toString(), msg);
     }
   }),
+
+  generateLines: protectedProcedure
+    .input(
+      z.object({
+        gameId: z.string(),
+        turn: z.number(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.subject) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const game = await getGame(ctx.db, input.gameId);
+      if (!game) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (game.userId !== ctx.subject.properties.userId) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      const linesGen = await lineGenerated(ctx.db, input.gameId, input.turn);
+
+      if (linesGen) {
+        return;
+      }
+
+      await markLinesGenerated(ctx.db, input.gameId, input.turn);
+
+      const fen = await getPositionFen(ctx.db, input.gameId, input.turn);
+
+      if (!fen) {
+        console.error("Fen is null", input.gameId, input.turn)
+        return
+      }
+
+      await publishLinesTask(ctx.valkey, input.gameId, input.turn, fen);
+    }),
 });
 
 export type GameWithHeaders = GameWithHeadersType;

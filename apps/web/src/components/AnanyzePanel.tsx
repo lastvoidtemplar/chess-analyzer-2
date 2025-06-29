@@ -321,7 +321,7 @@ const ScoresChart = React.memo(({ gameId }: ScoreChartType) => {
               stroke="#000000"
               fill="#eeeeee"
               fillOpacity={0.95}
-              strokeWidth={2}
+              strokeWidth={0}
               isAnimationActive={false}
             />
           </AreaChart>
