@@ -139,7 +139,8 @@ function handleScoresMessage(payload: ScoresMessage["payload"]) {
       lines.forEach((line) => {
         if (
           line.length > 3 &&
-          line.substring(0, 22) === "info depth 20 seldepth"
+          (line.substring(0, 22) === "info depth 20 seldepth"
+          ||  line.substring(0, 25) === "info depth 0 score mate 0")
         ) {
           console.log(`Stockfish >> ${line}`);
 
@@ -241,7 +242,8 @@ function handleLinesMessage(
           send("go depth 20");
         } else if (
           line.length > 3 &&
-          line.substring(0, 22) === "info depth 20 seldepth"
+          (line.substring(0, 22) === "info depth 20 seldepth"
+          ||  line.substring(0, 25) === "info depth 0 score mate 0")
         ) {
           console.log(`Stockfish >> ${line}`);
 
@@ -290,7 +292,7 @@ function handleLinesMessage(
             send(`position fen ${fens[lansInd - 1]} moves ${lans[lineInd2][lansInd]}`);
             send("d");
           }
-        }
+        } 
       });
     };
     stockfish.stdout.on("data", handler);

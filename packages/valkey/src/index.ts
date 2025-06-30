@@ -8,7 +8,7 @@ import {
 } from "@repo/db";
 import { Chess } from "chess.js";
 import Valkey from "iovalkey";
-import  EventEmitter  from "events";
+import EventEmitter from "events";
 
 type FensMessage = {
   type: "fens";
@@ -76,7 +76,11 @@ type OutputLine = {
   }[];
 };
 
-export async function listenResponseQueue(db: DB, valkey: Valkey, ee: EventEmitter) {
+export async function listenResponseQueue(
+  db: DB,
+  valkey: Valkey,
+  ee: EventEmitter
+) {
   while (true) {
     try {
       const result = await valkey.blpop(responseQueue, 0);
@@ -97,7 +101,7 @@ export async function listenResponseQueue(db: DB, valkey: Valkey, ee: EventEmitt
             await handleScoresMessage(db, parsed.state, parsed.payload);
             break;
           case "lines":
-            await handleLinesMessage(db, parsed.state, parsed.payload,ee);
+            await handleLinesMessage(db, parsed.state, parsed.payload, ee);
             break;
         }
       }
@@ -154,6 +158,7 @@ async function handleLinesMessage(
     if (!fen || !score) {
       throw new Error(`Not found game position ${gameId}  ${gameTurn}`);
     }
+    const minus = gameTurn % 2 == 0 ? 1 : -1;
     const chess = new Chess(fen);
     const linePositions = [
       {
@@ -177,7 +182,7 @@ async function handleLinesMessage(
           lan: pos.lan,
           fen: pos.fen,
           scoreUnit: pos.score.unit,
-          scoreValue: Math.pow(-1, lineTurn) * pos.score.score,
+          scoreValue: minus * Math.pow(-1, lineTurn) * pos.score.score,
         };
       }
 
@@ -190,27 +195,27 @@ async function handleLinesMessage(
         lan: undefined,
         fen: pos.fen,
         scoreUnit: pos.score.unit as "cp" | "mate",
-        scoreValue: Math.pow(-1, lineTurn) * (pos.score.score ?? 0),
+        scoreValue: minus * Math.pow(-1, lineTurn) * (pos.score.score ?? 0),
       };
     });
     createLine(db, gameId, gameTurn, line, lineScore, linePositions);
-    const proj:OutputLine = {
+    const proj: OutputLine = {
       gameId,
       gameTurn,
       line,
       scoreUnit: lineScore.unit,
       scoreValue: lineScore.score,
-      positions: linePositions.map(pos=>{
+      positions: linePositions.map((pos) => {
         return {
-          san: pos.san??null,
-          lan: pos.lan??null,
+          san: pos.san ?? null,
+          lan: pos.lan ?? null,
           fen: pos.fen,
           scoreUnit: pos.scoreUnit,
-          scoreValue: pos.scoreValue
-        }
-      })
-    }
-    ee.emit(`line-${gameId}-${gameTurn}`, proj)
+          scoreValue: pos.scoreValue,
+        };
+      }),
+    };
+    ee.emit(`line-${gameId}-${gameTurn}`, proj);
   } catch (err) {
     console.error(err);
   }

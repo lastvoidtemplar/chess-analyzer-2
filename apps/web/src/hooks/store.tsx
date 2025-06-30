@@ -150,7 +150,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
 
       const capped = Math.max(-1000, Math.min(1000, position.scoreValue));
-      position.scorePercent = parseFloat((50 - capped / 20).toFixed(2));
+      position.scorePercent = 100 -parseFloat((50 - capped / 20).toFixed(2));
     }
 
     set((prev) => {
@@ -532,7 +532,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           }
 
           const capped = Math.max(-1000, Math.min(1000, pos.scoreValue));
-          pos.scorePercent = parseFloat((50 - capped / 20).toFixed(2));
+          pos.scorePercent = 100 - parseFloat((50 - capped / 20).toFixed(2));
         })
       );
 

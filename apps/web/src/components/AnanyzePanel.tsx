@@ -424,7 +424,7 @@ function LinesHistory({ gameId }: LinesHistoryProps) {
               )}
               onClick={() => setLineTurn(gameId, lineInd, 0)}
             >
-              Line {line.line} : {line.scoreValue?line.scoreValue/100:null}
+              Line {line.line} : {line.scoreUnit==="cp"?(line.scoreValue??0)/100:line.scoreValue}
               {line.scoreUnit === "mate" && "M"}
             </button>
             {line.positions.slice(1).map((pos, ind) => {
