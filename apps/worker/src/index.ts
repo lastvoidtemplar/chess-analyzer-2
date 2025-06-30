@@ -188,6 +188,8 @@ function handleLinesMessage(
   payload: LinesMessage["payload"]
 ) {
   return new Promise((resolve) => {
+    let linesGen = false
+    let linesCount = 0;
     let lineInd1 = 0;
     let lineInd2 = 0;
     let lansInd = 0;
@@ -200,7 +202,7 @@ function handleLinesMessage(
       const lines: string[] = data.toString().split("\n");
       lines.forEach((line) => {
         if (
-          lineInd1 < 3 &&
+          !linesGen &&
           line.length > 22 &&
           line.substring(0, 22) === "info depth 20 seldepth"
         ) {
@@ -220,9 +222,9 @@ function handleLinesMessage(
           });
           lans.push(l);
           
-          lineInd1++;
+          linesCount++;
 
-          if (lineInd1 === 3) {
+          if (linesCount === 1) {
             positions.push([]);
             send("setoption name MultiPV value 1");
             send(`position fen ${fen} moves ${lans[0][0]}`);
@@ -233,6 +235,7 @@ function handleLinesMessage(
           line.length > 3 &&
           line.substring(0, 3) === "Fen"
         ) {
+          linesGen = true
           console.log(`Stockfish >> ${line}`);
 
           const fen = line.substring(5);
@@ -267,7 +270,7 @@ function handleLinesMessage(
             lineInd2++;
             positions.push([]);
 
-            if (lineInd2 === 3) {
+            if (lineInd2 === linesCount) {
               const line: Line = {
                 line: lineInd2,
                 score: scores[lineInd2-1],

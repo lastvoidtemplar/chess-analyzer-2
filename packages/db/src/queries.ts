@@ -1,5 +1,6 @@
 import {
   and,
+  asc,
   desc,
   eq,
   InferInsertModel,
@@ -349,7 +350,7 @@ export async function getMessages(db: DB, limit: number = 50) {
     .select()
     .from(messages)
     .innerJoin(users, eq(messages.userId, users.userId))
-    .orderBy(desc(messages.timestamp))
+    .orderBy(asc(messages.timestamp))
     .limit(limit);
   return result;
 }
