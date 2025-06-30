@@ -166,7 +166,7 @@ async function handleLinesMessage(
         fen: fen,
         score: {
           unit: score.scoreUnit,
-          score: score.scoreValue,
+          score: score.scoreValue ? Math.pow(-1, gameTurn)*score.scoreValue:null,
         },
       },
       ...payload.line.positions,
